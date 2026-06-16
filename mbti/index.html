@@ -307,10 +307,10 @@ const NOTION_LINKS = {
   ENTJ: "https://ctee.kr/item/store/8397"
 };
 
-/* 이미지는 img/ 폴더에 포함되어 자동 연결됩니다.
-   - 시작 화면: img/start.jpg
-   - 질문:      img/q1.png ~ img/q12.png (질문 순서)
-   - 결과:      img/[유형].png  예) img/ESFP.png */
+/* 이미지는 index.html과 같은 폴더에 두면 자동 연결됩니다.
+   - 시작 화면: start.jpg
+   - 질문:      q1.png ~ q12.png (질문 순서)
+   - 결과:      [유형].png  예) ESFP.png */
 
 /* ============================================================
    질문 데이터 (각 보기는 MBTI 한 글자로 채점)
@@ -666,7 +666,7 @@ const App = {
   score:{E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0},
 
   init(){
-    document.getElementById('hero-art').innerHTML = '<img src="img/start.jpg" alt="슈크림 마을">';
+    document.getElementById('hero-art').innerHTML = '<img src="start.jpg" alt="슈크림 마을">';
     // 공유 링크로 들어온 경우 결과 바로 보여주기 (#result=ESFP)
     const m = location.hash.match(/result=([EISNTFJP]{4})/i);
     if(m && RESULTS[m[1].toUpperCase()]) this.showResult(m[1].toUpperCase());
@@ -691,7 +691,7 @@ const App = {
     qt.textContent = q.q.replace(/<br\s*\/?>/gi,' ');
     qt.style.animation='none'; void qt.offsetWidth; qt.style.animation='fade .4s ease';
     // 일러스트: 질문 순서에 맞는 이미지(img/q1.png ~ img/q12.png)
-    document.getElementById('q-art').innerHTML = `<img src="img/q${this.idx+1}.png" alt="">`;
+    document.getElementById('q-art').innerHTML = `<img src="q${this.idx+1}.png" alt="">`;
     // 보기 버튼: 한 줄로 들어가도록 글자 크기 자동 조절(안 되면 keep-all 줄바꿈)
     setBtnText(document.getElementById('ans-a'), q.a.t, 17, 12);
     setBtnText(document.getElementById('ans-b'), q.b.t, 17, 12);
@@ -721,7 +721,7 @@ const App = {
   showResult(code){
     const r = RESULTS[code];
     document.getElementById('r-type').textContent = code;
-    document.getElementById('r-art').innerHTML = `<img src="img/${code}.png" alt="${code} 슈크림">`;
+    document.getElementById('r-art').innerHTML = `<img src="${code}.png" alt="${code} 슈크림">`;
     // 별명 / 자주 하는 말: 한 줄로 들어가도록 글자 크기 자동 조절
     setText(document.getElementById('r-nick'), r.nick, 20, 13);
     setText(document.getElementById('r-saying'), r.say, 19, 13);

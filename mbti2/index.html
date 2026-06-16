@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>슈크림 MBTI — 나에게 어울리는 템플릿은?</title>
+<meta name="description" content="속이 텅 빈 공갈빵 마을을 탈출해 속이 꽉 찬 슈크림 마을에 가기까지! 나에게 어울리는 노션 템플릿을 찾아보는 슈크림 MBTI 테스트" />
+<meta property="og:title" content="슈크림 MBTI — 나에게 어울리는 템플릿은?" />
+<meta property="og:description" content="12개의 질문으로 알아보는 나의 슈크림 유형과 어울리는 무료 노션 템플릿!" />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  /* =========================================================
+     슈크림 MBTI — 컬러 팔레트
+     초록색 업그레이드: #548164  ->  #21532C
+     ========================================================= */
+  :root{
+    --green:        #21532C;   /* 메인 초록 (업그레이드) */
+    --green-dark:   #163A1E;   /* 눌렀을 때 / 진한 초록 */
+    --green-mid:    #3E7A4B;   /* 보조 초록 */
+    --green-soft:   #6E9577;   /* 옅은 세이지 */
+    --green-tint:   #E7F0E8;   /* 아주 옅은 초록 배경 */
+    --green-tint2:  #D4E5D7;   /* 옅은 초록 (트랙 등) */
+    --bg:           #F4F3EC;   /* 페이지 배경(따뜻한 화이트) */
+    --card:         #FFFFFF;
+    --ink:          #2E2E2E;
+    --muted:        #8C918A;
+    --cream:        #F6ECC9;
+    --cream-shade:  #ECDFB4;
+    --cheek:        #F2B49E;
+    --shadow:       0 10px 30px rgba(33,83,44,.14);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    font-family:'Noto Sans KR', sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, var(--green-tint) 0%, transparent 60%),
+      var(--bg);
+    display:flex; justify-content:center; align-items:flex-start;
+    min-height:100dvh;
+  }
+
+  /* 모바일 앱 프레임 */
+  .app{
+    width:100%;
+    max-width:460px;
+    min-height:100dvh;
+    background:var(--bg);
+    position:relative;
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    box-shadow:0 0 60px rgba(33,83,44,.08);
+  }
+  @media (min-width:520px){
+    body{ align-items:center; padding:24px 0; }
+    .app{ min-height:auto; height:min(880px, 94dvh); border-radius:28px; }
+  }
+
+  /* 한국어 단어가 글자 중간에서 끊기지 않도록(가독성) + 줄 균형 맞추기 */
+  .logo, .sub, .q-text, .answer .lbl, .result-nick .lbl,
+  .result-saying .lbl, .result-desc{
+    word-break:keep-all;
+    text-wrap:balance;
+  }
+  .result-desc{ text-wrap:pretty; }
+  .lbl{ display:inline-block; }
+
+  .screen{ display:none; flex:1; flex-direction:column; padding:26px 22px 30px; }
+  .screen.active{ display:flex; animation:fade .45s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+
+  /* ---------- 시작 화면 ---------- */
+  #screen-start{ justify-content:space-between; text-align:center; }
+  .start-top{ padding-top:34px; }
+  .logo{
+    font-family:'Jua', sans-serif;
+    color:var(--green);
+    font-size:54px; line-height:1; letter-spacing:1px;
+    text-shadow:2px 3px 0 rgba(33,83,44,.10);
+  }
+  .logo small{ font-size:46px; }
+  .sub{
+    margin-top:18px;
+    font-family:'Jua', sans-serif;
+    color:var(--green-mid);
+    font-size:18px; line-height:1.7;
+  }
+  .hero-art{ margin:10px auto 0; width:100%; max-width:360px; }
+  .hero-art svg, .hero-art img{ width:100%; height:auto; display:block; border-radius:14px; }
+
+  /* ---------- 버튼 ---------- */
+  .btn{
+    font-family:'Jua', sans-serif;
+    border:none; cursor:pointer;
+    background:var(--green); color:#fff;
+    border-radius:18px;
+    padding:20px 18px;
+    font-size:22px; letter-spacing:1px;
+    width:100%;
+    box-shadow:0 6px 0 var(--green-dark);
+    transition:transform .08s ease, box-shadow .08s ease, background .15s;
+  }
+  .btn:hover{ background:var(--green-mid); }
+  .btn:active{ transform:translateY(5px); box-shadow:0 1px 0 var(--green-dark); }
+
+  .start-btn-wrap{ padding-bottom:6px; }
+
+  /* ---------- 퀴즈 화면 ---------- */
+  .quiz-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .quiz-title{
+    font-family:'Jua', sans-serif;
+    color:var(--green); font-size:16px;
+  }
+  .quiz-count{ font-family:'Jua', sans-serif; color:var(--muted); font-size:16px; white-space:nowrap; }
+  .progress{
+    margin-top:12px;
+    height:12px; border-radius:999px;
+    background:var(--green-tint2);
+    overflow:hidden;
+  }
+  .progress > i{
+    display:block; height:100%;
+    width:0%;
+    border-radius:999px;
+    background:linear-gradient(90deg, var(--green-soft), var(--green));
+    transition:width .4s cubic-bezier(.4,1.2,.4,1);
+  }
+  .q-text{
+    font-family:'Jua', sans-serif;
+    color:var(--green);
+    font-size:23px; line-height:1.5;
+    text-align:center;
+    margin:26px 6px 4px;
+    min-height:70px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .q-art{
+    flex:1;
+    display:flex; align-items:center; justify-content:center;
+    min-height:170px;
+  }
+  .q-art svg, .q-art img{ width:84%; max-width:300px; height:auto; }
+  .answers{ display:flex; flex-direction:column; gap:14px; margin-top:6px; }
+  .answer{
+    font-family:'Jua', sans-serif; font-weight:400;
+    background:var(--green); color:#fff;
+    border:none; cursor:pointer;
+    border-radius:16px;
+    padding:16px 16px; min-height:58px;
+    font-size:17px; line-height:1.35; text-align:center;
+    box-shadow:0 5px 0 var(--green-dark);
+    transition:transform .08s, box-shadow .08s, background .15s;
+  }
+  .answer:hover{ background:var(--green-mid); }
+  .answer:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--green-dark); }
+
+  /* ---------- 결과 화면 ---------- */
+  #screen-result{ padding-top:22px; }
+  .result-card{
+    background:var(--card);
+    border-radius:24px;
+    padding:26px 22px 24px;
+    box-shadow:var(--shadow);
+    position:relative;
+  }
+  .result-type{
+    font-family:'Jua', sans-serif;
+    color:var(--green);
+    font-size:40px; letter-spacing:2px; text-align:center;
+  }
+  .result-art{ width:160px; margin:8px auto 14px; }
+  .result-art svg, .result-art img{ width:100%; height:auto; }
+  .result-nick{
+    font-family:'Jua', sans-serif;
+    font-size:20px; color:var(--ink); text-align:center; line-height:1.5;
+  }
+  .result-saying{
+    text-align:center; color:var(--green-mid);
+    font-family:'Gaegu', cursive; font-weight:700;
+    font-size:19px; margin-top:6px;
+  }
+  .result-desc{
+    margin-top:18px; padding-top:18px;
+    border-top:2px dashed var(--green-tint2);
+    font-size:15.5px; line-height:1.8; color:#444;
+    text-align:center;
+  }
+  .result-desc b{ color:var(--green); }
+  .result-actions{ display:flex; flex-direction:column; gap:12px; margin-top:20px; }
+  .action{
+    font-family:'Jua', sans-serif;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    border:none; cursor:pointer; text-decoration:none;
+    border-radius:16px; padding:17px;
+    font-size:17px; white-space:nowrap;
+    transition:transform .08s, box-shadow .08s, background .15s;
+  }
+  .action .ico{ width:22px; height:22px; flex:none; }
+  .action-primary{ background:var(--green); color:#fff; box-shadow:0 5px 0 var(--green-dark); }
+  .action-primary:hover{ background:var(--green-mid); }
+  .action-secondary{ background:var(--green-soft); color:#fff; box-shadow:0 5px 0 #527259; }
+  .action-secondary:hover{ filter:brightness(1.05); }
+  .action-ghost{ background:var(--green-tint); color:var(--green); box-shadow:0 5px 0 var(--green-tint2); }
+  .action-ghost:hover{ background:var(--green-tint2); }
+  .action:active{ transform:translateY(4px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+
+  .toast{
+    position:fixed; left:50%; bottom:32px; transform:translateX(-50%) translateY(20px);
+    background:var(--green-dark); color:#fff;
+    font-family:'Jua', sans-serif; font-size:15px;
+    padding:13px 22px; border-radius:999px;
+    opacity:0; pointer-events:none; transition:.3s; z-index:50;
+    white-space:nowrap;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .footnote{ text-align:center; color:var(--muted); font-size:11px; margin-top:18px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= 시작 화면 ================= -->
+  <section id="screen-start" class="screen active">
+    <div class="start-top">
+      <h1 class="logo">슈크림 <small>MBTI</small></h1>
+      <p class="sub">속이 텅 빈 공갈빵 마을을 탈출해<br>속이 꽉 찬 슈크림 마을에 가기까지</p>
+      <div class="hero-art" id="hero-art"></div>
+    </div>
+    <div class="start-btn-wrap">
+      <button class="btn" onclick="App.start()">시작하기</button>
+      <p class="footnote">12개의 질문으로 알아보는 나의 슈크림 유형 🍞</p>
+    </div>
+  </section>
+
+  <!-- ================= 퀴즈 화면 ================= -->
+  <section id="screen-quiz" class="screen">
+    <div class="quiz-head">
+      <span class="quiz-title">슈크림 MBTI 나에게 어울리는 템플릿은?</span>
+      <span class="quiz-count" id="q-count">1 / 12</span>
+    </div>
+    <div class="progress"><i id="q-bar"></i></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="q-art" id="q-art"></div>
+    <div class="answers">
+      <button class="answer" id="ans-a" onclick="App.answer('a')"></button>
+      <button class="answer" id="ans-b" onclick="App.answer('b')"></button>
+    </div>
+  </section>
+
+  <!-- ================= 결과 화면 ================= -->
+  <section id="screen-result" class="screen">
+    <div class="result-card">
+      <div class="result-type" id="r-type">ESFP</div>
+      <div class="result-art" id="r-art"></div>
+      <div class="result-nick" id="r-nick"></div>
+      <div class="result-saying" id="r-saying"></div>
+      <div class="result-desc" id="r-desc"></div>
+    </div>
+    <div class="result-actions">
+      <a class="action action-primary" id="r-notion" href="#" target="_blank" rel="noopener">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" fill="#fff"/><path d="M7 7v10M7 7l8 10M16 7v10" stroke="#21532C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="r-notion-label">무료 템플릿 받기</span>
+      </a>
+      <button class="action action-secondary" onclick="App.share()">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7l6-3.5M9 14l6 3.5"/><circle cx="6" cy="10.5" r="3"/><circle cx="18" cy="4" r="3"/><circle cx="18" cy="17" r="3"/></svg>
+        친구에게 링크 공유하기
+      </button>
+      <button class="action action-ghost" onclick="App.restart()">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#21532C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.3 5.6"/><path d="M4 19v-5h5"/></svg>
+        테스트 다시하기
+      </button>
+    </div>
+    <p class="footnote">슈크림 MBTI · 결과는 재미로 봐주세요 🍞</p>
+  </section>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============================================================
+   📌 노션 템플릿 링크 설정
+   아래 16개 값에 각 유형별 무료 노션 템플릿 링크를 넣어주세요.
+   링크를 비워두면 버튼이 "곧 연결될 예정" 안내를 띄웁니다.
+   ============================================================ */
+const NOTION_LINKS = {
+  ISTJ: "https://ctee.kr/item/store/8393",
+  ISFJ: "https://ctee.kr/item/store/8391",
+  INFJ: "https://ctee.kr/item/store/8387",
+  INTJ: "https://ctee.kr/item/store/8389",
+  ISTP: "https://ctee.kr/item/store/8392",
+  ISFP: "https://ctee.kr/item/store/8390",
+  INFP: "https://ctee.kr/item/store/8386",
+  INTP: "https://ctee.kr/item/store/8388",
+  ESTP: "https://ctee.kr/item/store/8400",
+  ESFP: "https://ctee.kr/item/store/8398",
+  ENFP: "https://ctee.kr/item/store/8394",
+  ENTP: "https://ctee.kr/item/store/8396",
+  ESTJ: "https://ctee.kr/item/store/8401",
+  ESFJ: "https://ctee.kr/item/store/8399",
+  ENFJ: "https://ctee.kr/item/store/8395",
+  ENTJ: "https://ctee.kr/item/store/8397"
+};
+
+/* 이미지는 index.html과 같은 폴더에 두면 자동 연결됩니다.
+   - 시작 화면: start.jpg
+   - 질문:      q1.png ~ q12.png (질문 순서)
+   - 결과:      [유형].png  예) ESFP.png */
+
+/* ============================================================
+   질문 데이터 (각 보기는 MBTI 한 글자로 채점)
+   E/I · S/N · T/F · J/P 각 축마다 3문항씩
+   ============================================================ */
+const QUESTIONS = [
+  { q:"매일 똑같이 흘러가는 슈크림 공장,<br>지루하고 무료한 반복되는 작업에 나는?",
+    art:"think",
+    a:{ t:"공장을 탈출해서 멋지게 사는 삶을 상상한다.", k:"N" },
+    b:{ t:"앞에 있는 일부터 빨리 끝내고 퇴근할 생각을 한다.", k:"S" } },
+
+  { q:"갑자기 나타난 공갈빵 팀장이<br>친구의 실수를 나무라며 혼내기 시작",
+    art:"oops",
+    a:{ t:"괜찮아? 친구를 위로하며 공갈빵 팀장을 욕한다.", k:"F" },
+    b:{ t:"왜 혼났어? 혼난 이유를 물어보고 실수하지 않을 수 있게 해결책을 제시한다.", k:"T" } },
+
+  { q:"어느날 갑자기 나타난 노슈니!<br>공장 탈출 방법을 알고 있다고 하는데",
+    art:"guide",
+    a:{ t:"당장 짐을 싸서 따라나선다.", k:"P" },
+    b:{ t:"일단 탈출 계획을 들어본다.", k:"J" } },
+
+  { q:"노슈니와 함께 탈출하기로 한 나,<br>빠져나가는 중 뒤에서 큰 소리가 났다!",
+    art:"run",
+    a:{ t:"놀라긴 했지만 일단 탈출부터 한다.", k:"T" },
+    b:{ t:"너무 놀라서 몸이 얼어붙는다.", k:"F" } },
+
+  { q:"아참! 깜빡하고 좋아하던<br>애착 이불을 두고 온게 생각이 났다.",
+    art:"sleep",
+    a:{ t:"어쩔수 없으니 그냥 간다.", k:"J" },
+    b:{ t:"다시 돌아가서 가져올까 말까 고민한다.", k:"P" } },
+
+  { q:"드디어 공장을 탈출해<br>슈크림 마을에 도착한 나!",
+    art:"walk",
+    a:{ t:"힘들게 탈출했으니 일단 구석에 앉아서 쉰다.", k:"I" },
+    b:{ t:"새로운 마을에 왔으니 친구들과 반갑게 대화한다.", k:"E" } },
+
+  { q:"활기가 넘치는 슈크림 마을!<br>이곳에서 내가 가장 먼저 한 일은?",
+    art:"eat",
+    a:{ t:"배고프니 밥부터 먹는다.", k:"S" },
+    b:{ t:"마을을 살펴보고 뭐부터 할지 고민한다.", k:"N" } },
+
+  { q:"이곳에서는 원하는건<br>무엇이든지 할 수 있다고 한다!",
+    art:"think",
+    a:{ t:"공장에서 일하는 친구한테 당장 전화를 걸어 알려준다.", k:"N" },
+    b:{ t:"탈출 방법을 구체적으로 정리한 후 친구에게 연락한다.", k:"S" } },
+
+  { q:"슈크림 마을에는 갓생을 사는<br>친구들이 많이 있어서 친해지고 싶다",
+    art:"group",
+    a:{ t:"가서 말을 걸며 친구하자고 한다.", k:"E" },
+    b:{ t:"마이쮸를 들고 주변을 서성인다.", k:"I" } },
+
+  { q:"속이 꽉찬 슈크림이 되기 위한 다양한<br>커리큘럼이 준비되어있는 슈크림 마을",
+    art:"scroll",
+    a:{ t:"마음에 드는 자리가 꽉 차기 전에 빠르게 선택한다.", k:"J" },
+    b:{ t:"관심사가 너무 많아 뭐부터 할 지 고민한다.", k:"P" } },
+
+  { q:"마음에 드는 커리큘럼 자리가<br>딱 하나 남았는데 친구도 듣고 싶어한다",
+    art:"two",
+    a:{ t:"왜 하고 싶은지 물어보고 고민한 후 결정한다.", k:"T" },
+    b:{ t:"친구가 너무 듣고 싶어하는 것 같으니 양보한다.", k:"F" } },
+
+  { q:"무럭무럭 성장한 나!<br>슈크림 마을에 집을 살 수 있게 되었다",
+    art:"house",
+    a:{ t:"친구들이 많은 시끌벅적한 동네 한 가운데로 결정한다.", k:"E" },
+    b:{ t:"조용하고 한적한 골목 귀퉁이로 결정한다.", k:"I" } }
+];
+/* 총 12문항 — E/I·S/N·T/F·J/P 각 축 3문항씩 (홀수라 동점 없이 한쪽이 결정됨) */
+
+/* ============================================================
+   16개 결과 데이터
+   nick : 유형 별명 (태생이 ~한 OOO 슈크림)
+   say  : 가장 많이 하는 말
+   tpl  : 어울리는 템플릿 이름
+   desc : 추천 멘트
+   ============================================================ */
+const RESULTS = {
+  ISTJ:{ face:"smile", nick:"FM 그 자체, 원칙주의 ISTJ 슈크림",
+    say:'가장 많이 하는 말은 "계획대로 가야지~"',
+    label:"무료 ISTJ 템플릿 받기",
+    desc:'ISTJ 슈크림은 <b>데일리 플래너</b> 템플릿이 딱 어울려📒<br>하루를 빈틈없이 채우는 너에게 체계적인 일정 관리 템플릿이라구!' },
+
+  ISFJ:{ face:"smile", nick:"은근 다 챙기는 살림꾼 ISFJ 슈크림",
+    say:'가장 많이 하는 말은 "밥은 먹었어?"',
+    label:"무료 ISFJ 템플릿 받기",
+    desc:'ISFJ 슈크림은 <b>가계부 + 습관 트래커</b> 템플릿이 딱 어울려🧺<br>주변을 살뜰히 챙기는 너에게 나와 일상을 차곡차곡 관리하는 템플릿이라구!' },
+
+  INFJ:{ face:"wink", nick:"조용한 이상주의자 INFJ 슈크림",
+    say:'가장 많이 하는 말은 "이게 다 의미가 있어"',
+    label:"무료 INFJ 템플릿 받기",
+    desc:'INFJ 슈크림은 <b>감정 기록 다이어리 + 목표 보드</b>가 딱 어울려🌙<br>깊은 속마음을 정리하는 너에게 마음과 목표를 함께 적는 템플릿이라구!' },
+
+  INTJ:{ face:"cool", nick:"혼자서도 완벽한 전략가 INTJ 슈크림",
+    say:'가장 많이 하는 말은 "이미 다 계획돼 있어"',
+    label:"무료 INTJ 템플릿 받기",
+    desc:'INTJ 슈크림은 <b>연간 목표 마스터플랜 대시보드</b>가 딱 어울려🎯<br>큰 그림을 그리는 너에게 장기 목표를 한눈에 관리하는 템플릿이라구!' },
+
+  ISTP:{ face:"smile", nick:"쿨한 만능 해결사 ISTP 슈크림",
+    say:'가장 많이 하는 말은 "그냥 하면 되지"',
+    label:"무료 ISTP 템플릿 받기",
+    desc:'ISTP 슈크림은 <b>미니멀 투두 + 위시리스트</b> 템플릿이 딱 어울려🛠️<br>군더더기를 싫어하는 너에게 딱 필요한 것만 담은 심플한 템플릿이라구!' },
+
+  ISFP:{ face:"happy", nick:"감성 충만 예술가 ISFP 슈크림",
+    say:'가장 많이 하는 말은 "오늘 분위기 좋다~"',
+    label:"무료 ISFP 템플릿 받기",
+    desc:'ISFP 슈크림은 <b>무드보드 + 취미 기록 다이어리</b>가 딱 어울려🎨<br>순간의 감성을 모으는 너에게 예쁘게 꾸미는 무드보드 템플릿이라구!' },
+
+  INFP:{ face:"wink", nick:"마음속 우주를 품은 INFP 슈크림",
+    say:'가장 많이 하는 말은 "음.. 나는 좀 다른 것 같아"',
+    label:"무료 INFP 템플릿 받기",
+    desc:'INFP 슈크림은 <b>감성 다이어리 + 버킷리스트</b>가 딱 어울려✨<br>상상력 가득한 너에게 꿈과 감정을 적는 따뜻한 템플릿이라구!' },
+
+  INTP:{ face:"think", nick:"머릿속이 도서관인 INTP 슈크림",
+    say:'가장 많이 하는 말은 "근데 그거 왜 그런 거야?"',
+    label:"무료 INTP 템플릿 받기",
+    desc:'INTP 슈크림은 <b>아이디어 노트 + 지식 정리</b> 템플릿이 딱 어울려🧠<br>호기심 많은 너에게 생각을 차곡차곡 쌓는 지식 관리 템플릿이라구!' },
+
+  ESTP:{ face:"happy", nick:"일단 저지르는 행동파 ESTP 슈크림",
+    say:'가장 많이 하는 말은 "재밌겠다, 바로 가자!"',
+    label:"무료 ESTP 템플릿 받기",
+    desc:'ESTP 슈크림은 <b>챌린지 & 운동 트래커</b>가 딱 어울려🔥<br>에너지 넘치는 너에게 도전 기록을 쌓는 트래커 템플릿이라구!' },
+
+  /* === 원본 ESFP 결과 (그대로 반영) === */
+  ESFP:{ face:"cool", nick:"태생이 연예인인 관종 ESFP 슈크림",
+    say:'가장 많이 하는 말은 "안녕? 나야~"',
+    label:"무료 ESFP 템플릿 받기",
+    desc:'ESFP 슈크림은 <b>초대장</b> 템플릿이 딱 어울려❤️<br>나를 뽐낼 수 있는 자리를 만들어주는 템플릿이라구!' },
+
+  ENFP:{ face:"happy", nick:"호기심 천국 인싸 ENFP 슈크림",
+    say:'가장 많이 하는 말은 "오 그거 완전 내 스타일!"',
+    label:"무료 ENFP 템플릿 받기",
+    desc:'ENFP 슈크림은 <b>버킷리스트 + 취미 트래커</b>가 딱 어울려🌈<br>하고 싶은 게 많은 너에게 다양한 관심사를 담는 알록달록 템플릿이라구!' },
+
+  ENTP:{ face:"wink", nick:"토론을 즐기는 아이디어뱅크 ENTP 슈크림",
+    say:'가장 많이 하는 말은 "근데 이건 어때?"',
+    label:"무료 ENTP 템플릿 받기",
+    desc:'ENTP 슈크림은 <b>브레인스토밍 아이디어 보드</b>가 딱 어울려💡<br>번뜩이는 너에게 떠오르는 생각을 마구 던지는 아이디어 보드라구!' },
+
+  ESTJ:{ face:"cool", nick:"타고난 리더 추진왕 ESTJ 슈크림",
+    say:'가장 많이 하는 말은 "자, 정리해서 가자"',
+    label:"무료 ESTJ 템플릿 받기",
+    desc:'ESTJ 슈크림은 <b>프로젝트 관리 대시보드</b>가 딱 어울려📊<br>일을 끝내야 직성이 풀리는 너에게 업무를 한눈에 굴리는 템플릿이라구!' },
+
+  ESFJ:{ face:"happy", nick:"분위기 메이커 ESFJ 슈크림",
+    say:'가장 많이 하는 말은 "다들 괜찮아?"',
+    label:"무료 ESFJ 템플릿 받기",
+    desc:'ESFJ 슈크림은 <b>모임 · 이벤트 플래너</b>가 딱 어울려🎉<br>사람을 챙기는 너에게 모임과 기념일을 관리하는 템플릿이라구!' },
+
+  ENFJ:{ face:"smile", nick:"사람을 이끄는 따뜻한 리더 ENFJ 슈크림",
+    say:'가장 많이 하는 말은 "우리 같이 해보자!"',
+    label:"무료 ENFJ 템플릿 받기",
+    desc:'ENFJ 슈크림은 <b>인맥 관리 + 목표 보드</b>가 딱 어울려🤝<br>함께 성장하는 너에게 사람과 목표를 챙기는 템플릿이라구!' },
+
+  ENTJ:{ face:"cool", nick:"효율 끝판왕 지휘관 ENTJ 슈크림",
+    say:'가장 많이 하는 말은 "결론부터 말할게"',
+    label:"무료 ENTJ 템플릿 받기",
+    desc:'ENTJ 슈크림은 <b>목표 + 프로젝트 통합 대시보드</b>가 딱 어울려🚀<br>큰 그림과 실행을 모두 잡는 너에게 올인원 관리 템플릿이라구!' }
+};
+
+/* ============================================================
+   귀여운 슈크림 SVG 캐릭터 (직접 그림 — IP 복제 X)
+   ============================================================ */
+const C = {
+  cream:"#F6ECC9", shade:"#ECDFB4", line:"#7a6a45",
+  eye:"#3b3327", cheek:"#F2B49E", green:"#21532C", soft:"#6E9577", tint:"#E7F0E8"
+};
+
+/* 표정별 얼굴 path */
+function faceParts(face){
+  const eye = (x)=>`<circle cx="${x}" cy="0" r="4.6" fill="${C.eye}"/>`;
+  const cheek = (x)=>`<ellipse cx="${x}" cy="13" rx="9" ry="5.5" fill="${C.cheek}" opacity=".75"/>`;
+  let eyes = eye(-18)+eye(18), mouth='', extra='';
+  switch(face){
+    case "happy":
+      eyes = `<path d="M-24 -2 q6 -9 12 0" stroke="${C.eye}" stroke-width="4" fill="none" stroke-linecap="round"/>`+
+             `<path d="M12 -2 q6 -9 12 0" stroke="${C.eye}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+      mouth = `<path d="M-11 8 q11 14 22 0" stroke="${C.eye}" stroke-width="3.4" fill="#fff" stroke-linecap="round"/>`;
+      break;
+    case "wink":
+      eyes = eye(-18)+`<path d="M12 0 q6 -7 12 0" stroke="${C.eye}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+      mouth = `<path d="M-7 8 q7 8 14 0" stroke="${C.eye}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+      break;
+    case "cool":
+      eyes = `<rect x="-28" y="-6" width="20" height="13" rx="5" fill="${C.green}"/>`+
+             `<rect x="8" y="-6" width="20" height="13" rx="5" fill="${C.green}"/>`+
+             `<rect x="-9" y="-2" width="18" height="3.4" rx="1.7" fill="${C.green}"/>`;
+      mouth = `<path d="M-9 11 q9 9 18 0" stroke="${C.eye}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+      break;
+    case "oops":
+      eyes = `<path d="M-24 2 q6 -7 12 0" stroke="${C.eye}" stroke-width="4" fill="none" stroke-linecap="round"/>`+
+             `<path d="M12 2 q6 -7 12 0" stroke="${C.eye}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+      mouth = `<ellipse cx="0" cy="13" rx="6" ry="7" fill="${C.eye}"/>`;
+      break;
+    case "sleep":
+      eyes = `<path d="M-24 0 h12 M12 0 h12" stroke="${C.eye}" stroke-width="4" stroke-linecap="round"/>`;
+      mouth = `<path d="M-5 11 q5 5 10 0" stroke="${C.eye}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+      extra = `<text x="34" y="-26" font-family="Jua" font-size="20" fill="${C.soft}">z</text>`+
+              `<text x="46" y="-40" font-family="Jua" font-size="26" fill="${C.soft}">Z</text>`;
+      break;
+    case "think":
+      eyes = eye(-18)+eye(18);
+      mouth = `<path d="M-6 11 q6 4 12 0" stroke="${C.eye}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+      extra = `<text x="36" y="-24" font-family="Jua" font-size="24" fill="${C.soft}">?</text>`;
+      break;
+    default: /* smile */
+      mouth = `<path d="M-9 9 q9 10 18 0" stroke="${C.eye}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+  }
+  return cheek(-26)+cheek(26)+eyes+mouth+extra;
+}
+
+/* 크림빵 본체 + 얼굴 */
+function cream(face, color){
+  const fill = color || C.cream;
+  return `
+    <g>
+      <ellipse cx="-20" cy="55" rx="13" ry="6" fill="${C.shade}"/>
+      <ellipse cx="20" cy="55" rx="13" ry="6" fill="${C.shade}"/>
+      <path d="M-58 12 C -66 -28 -34 -52 0 -52 C 34 -52 66 -28 58 12
+               C 64 40 30 52 0 52 C -30 52 -64 40 -58 12 Z"
+            fill="${fill}" stroke="${C.line}" stroke-width="2.4" stroke-opacity=".35"/>
+      <path d="M-40 -22 q12 -14 26 -6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" opacity=".55"/>
+      <g transform="translate(0,2)">${faceParts(face)}</g>
+    </g>`;
+}
+
+/* 장면별 SVG */
+const SCENES = {
+  hero(){ return svg(360,250,`
+    <ellipse cx="180" cy="205" rx="150" ry="26" fill="${C.tint}"/>
+    <g transform="translate(95,120) scale(.62)">${cream("smile")}</g>
+    <g transform="translate(180,108) scale(.78)">${cream("happy")}</g>
+    <g transform="translate(270,126) scale(.6)">${cream("wink")}</g>
+    <g transform="translate(228,60) scale(.42)">${cream("smile","#FBF4DA")}</g>
+    <g transform="translate(310,170) scale(.36)">${cream("smile","#FBF4DA")}</g>
+    <g transform="translate(36,84)">
+      <rect x="0" y="0" width="92" height="26" rx="6" fill="#fff" stroke="${C.soft}" stroke-width="2"/>
+      <text x="46" y="18" text-anchor="middle" font-family="Gaegu" font-weight="700" font-size="15" fill="${C.green}">슈크림 마을</text>
+      <rect x="42" y="26" width="4" height="20" fill="${C.soft}"/>
+    </g>
+    <path d="M40 196 Q 180 150 330 196" stroke="${C.soft}" stroke-width="3" fill="none" stroke-dasharray="2 9" stroke-linecap="round" opacity=".6"/>
+  `);},
+  think(){ return scene(`<g transform="translate(150,118) scale(1.05)">${cream("think")}</g>`);},
+  oops(){ return scene(`
+    <g transform="translate(100,120) scale(.78)">${cream("oops")}</g>
+    <g transform="translate(205,120) scale(.78)">${cream("oops")}</g>`);},
+  guide(){ return scene(`
+    <g transform="translate(110,128) scale(.7)">${cream("smile")}</g>
+    <g transform="translate(205,112) scale(.95)">${cream("wink")}</g>
+    <text x="150" y="44" text-anchor="middle" font-family="Gaegu" font-weight="700" font-size="15" fill="${C.soft}">날 따라오면 재밌는 곳으로!</text>`);},
+  run(){ return scene(`
+    <g transform="translate(80,132) scale(.62) rotate(-8)">${cream("happy")}</g>
+    <g transform="translate(160,124) scale(.66) rotate(-8)">${cream("smile")}</g>
+    <g transform="translate(240,132) scale(.62) rotate(-8)">${cream("oops")}</g>
+    <path d="M40 90 l30 20 M280 70 l-26 22" stroke="${C.soft}" stroke-width="3" stroke-linecap="round" opacity=".6"/>`);},
+  sleep(){ return scene(`<g transform="translate(150,120) scale(1.05)">${cream("sleep")}</g>`);},
+  walk(){ return scene(`
+    <g transform="translate(120,120) scale(.95)">${cream("smile")}</g>
+    <g transform="translate(225,140) scale(.5)">${cream("happy")}</g>
+    <text x="150" y="40" text-anchor="middle" font-family="Gaegu" font-weight="700" font-size="15" fill="${C.soft}">가보자고~</text>`);},
+  eat(){ return scene(`
+    <g transform="translate(150,120) scale(1.0)">${cream("happy")}</g>
+    <circle cx="232" cy="150" r="16" fill="#fff" stroke="${C.line}" stroke-width="2" stroke-opacity=".4"/>
+    <path d="M232 138 v-12 M226 130 l6 -8 6 8" stroke="${C.soft}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`);},
+  group(){ return scene(`
+    <g transform="translate(95,116) scale(.6)">${cream("smile")}</g>
+    <g transform="translate(180,104) scale(.62)">${cream("happy")}</g>
+    <g transform="translate(255,120) scale(.58)">${cream("wink")}</g>
+    <g transform="translate(150,162) scale(.5)">${cream("smile")}</g>`);},
+  scroll(){ return scene(`
+    <g transform="translate(120,128) scale(.78)">${cream("think")}</g>
+    <g transform="translate(210,108)">
+      <rect x="0" y="0" width="74" height="92" rx="6" fill="#fff" stroke="${C.line}" stroke-width="2" stroke-opacity=".4"/>
+      <text x="37" y="22" text-anchor="middle" font-family="Gaegu" font-weight="700" font-size="13" fill="${C.green}">커리큘럼</text>
+      <path d="M12 38 h50 M12 52 h50 M12 66 h36" stroke="${C.soft}" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+    <text x="118" y="36" font-family="Jua" font-size="20" fill="${C.soft}">✦</text>`);},
+  two(){ return scene(`
+    <g transform="translate(105,128) scale(.8)">${cream("smile")}</g>
+    <g transform="translate(210,128) scale(.8)">${cream("happy")}</g>
+    <path d="M150 80 l24 0 m-12 -8 a14 14 0 0 1 0 16" stroke="${C.green}" stroke-width="0" fill="none"/>
+    <polygon points="150,116 168,104 168,128" fill="${C.green}"/>`);},
+  house(){ return scene(`
+    <g transform="translate(78,96)">
+      <rect x="0" y="34" width="78" height="58" rx="6" fill="#F7C9D2"/>
+      <path d="M-6 34 L39 4 L84 34 Z" fill="#fff" stroke="${C.line}" stroke-width="2" stroke-opacity=".35"/>
+      <rect x="28" y="60" width="22" height="32" rx="4" fill="${C.line}" opacity=".4"/>
+      <text x="39" y="26" text-anchor="middle" font-family="Gaegu" font-weight="700" font-size="12" fill="${C.green}">슈크림 옷가게</text>
+    </g>
+    <g transform="translate(190,96)">
+      <rect x="0" y="34" width="74" height="58" rx="6" fill="${C.soft}"/>
+      <path d="M-6 34 L37 6 L80 34 Z" fill="${C.green}"/>
+      <text x="37" y="26" text-anchor="middle" font-family="Gaegu" font-weight="700" font-size="12" fill="${C.green}">슈타벅스</text>
+      <rect x="46" y="56" width="22" height="36" rx="10" fill="${C.line}" opacity=".4"/>
+    </g>
+    <g transform="translate(150,176) scale(.42)">${cream("happy")}</g>`);}
+};
+
+function svg(w,h,inner){
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+}
+function scene(inner){
+  return svg(300,210,`<ellipse cx="150" cy="180" rx="138" ry="24" fill="${C.tint}"/>${inner}`);
+}
+function resultArt(face){
+  return svg(160,170,`
+    <ellipse cx="80" cy="150" rx="62" ry="14" fill="${C.tint}"/>
+    <g transform="translate(80,84) scale(1.05)">${cream(face)}</g>
+    <text x="30" y="40" font-family="Jua" font-size="20" fill="${C.soft}">✦</text>
+    <text x="126" y="56" font-family="Jua" font-size="16" fill="${C.soft}">✦</text>
+  `);
+}
+
+/* ============================================================
+   텍스트 한 줄 맞춤 (가독성)
+   - 글자 크기를 maxFs에서 minFs까지 줄여 한 줄에 맞춤
+   - 끝까지 안 들어가면 keep-all 기준으로 자연스럽게 줄바꿈
+   ============================================================ */
+function fitSpan(el, maxFs, minFs){
+  const span = el.querySelector('.lbl');
+  if(!span || !el.clientWidth) return;
+  const cs = getComputedStyle(el);
+  const avail = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 1;
+  span.style.whiteSpace = 'nowrap';
+  let fs = maxFs; span.style.fontSize = fs + 'px';
+  let guard = 0;
+  while(span.scrollWidth > avail && fs > minFs && guard++ < 140){
+    fs -= 0.5; span.style.fontSize = fs + 'px';
+  }
+  if(span.scrollWidth > avail){ span.style.whiteSpace = 'normal'; } // 한 줄 불가 → 줄바꿈 허용
+}
+function setBtnText(el, text, maxFs, minFs){
+  el.innerHTML = '<span class="lbl"></span>';
+  el.querySelector('.lbl').textContent = text;
+  el._fit = [maxFs, minFs];
+  requestAnimationFrame(()=>fitSpan(el, maxFs, minFs));
+}
+function setText(el, text, maxFs, minFs){ setBtnText(el, text, maxFs, minFs); }
+
+/* 창 크기가 바뀌면 보이는 화면의 텍스트를 다시 맞춤 */
+let _resizeT;
+window.addEventListener('resize', ()=>{
+  clearTimeout(_resizeT);
+  _resizeT = setTimeout(()=>{
+    document.querySelectorAll('.screen.active .answer, .screen.active .result-nick, .screen.active .result-saying')
+      .forEach(el=>{ if(el._fit) fitSpan(el, el._fit[0], el._fit[1]); });
+  }, 120);
+});
+
+/* ============================================================
+   앱 로직
+   ============================================================ */
+const App = {
+  idx:0,
+  score:{E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0},
+
+  init(){
+    document.getElementById('hero-art').innerHTML = '<img src="start.jpg" alt="슈크림 마을">';
+    // 공유 링크로 들어온 경우 결과 바로 보여주기 (#result=ESFP)
+    const m = location.hash.match(/result=([EISNTFJP]{4})/i);
+    if(m && RESULTS[m[1].toUpperCase()]) this.showResult(m[1].toUpperCase());
+  },
+
+  start(){
+    this.idx = 0;
+    this.score = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+    this.go('quiz');
+    this.render();
+  },
+
+  render(){
+    const q = QUESTIONS[this.idx];
+    document.getElementById('q-count').textContent = (this.idx+1)+' / '+QUESTIONS.length;
+    document.getElementById('q-bar').style.width = ((this.idx)/QUESTIONS.length*100)+'%';
+    requestAnimationFrame(()=>{ // 진행바 애니메이션
+      document.getElementById('q-bar').style.width = ((this.idx+1)/QUESTIONS.length*100)+'%';
+    });
+    // 질문: 강제 줄바꿈(<br>) 제거 → keep-all + balance로 자연스럽게 균형 배치
+    const qt = document.getElementById('q-text');
+    qt.textContent = q.q.replace(/<br\s*\/?>/gi,' ');
+    qt.style.animation='none'; void qt.offsetWidth; qt.style.animation='fade .4s ease';
+    // 일러스트: 질문 순서에 맞는 이미지(q1.png ~ q12.png)
+    document.getElementById('q-art').innerHTML = `<img src="q${this.idx+1}.png" alt="">`;
+    // 보기 버튼: 한 줄로 들어가도록 글자 크기 자동 조절(안 되면 keep-all 줄바꿈)
+    setBtnText(document.getElementById('ans-a'), q.a.t, 17, 12);
+    setBtnText(document.getElementById('ans-b'), q.b.t, 17, 12);
+  },
+
+  answer(which){
+    const q = QUESTIONS[this.idx];
+    this.score[ q[which].k ]++;
+    if(this.idx < QUESTIONS.length-1){
+      this.idx++;
+      this.render();
+    } else {
+      this.finish();
+    }
+  },
+
+  finish(){
+    const s = this.score;
+    const code =
+      (s.E>=s.I?'E':'I') +
+      (s.S>=s.N?'S':'N') +
+      (s.T>=s.F?'T':'F') +
+      (s.J>=s.P?'J':'P');
+    this.showResult(code);
+  },
+
+  showResult(code){
+    const r = RESULTS[code];
+    document.getElementById('r-type').textContent = code;
+    document.getElementById('r-art').innerHTML = `<img src="${code}.png" alt="${code} 슈크림">`;
+    // 별명 / 자주 하는 말: 한 줄로 들어가도록 글자 크기 자동 조절
+    setText(document.getElementById('r-nick'), r.nick, 20, 13);
+    setText(document.getElementById('r-saying'), r.say, 19, 13);
+    document.getElementById('r-desc').innerHTML = r.desc;
+    document.getElementById('r-notion-label').textContent = r.label;
+
+    const link = NOTION_LINKS[code];
+    const btn = document.getElementById('r-notion');
+    if(link){
+      btn.href = link; btn.style.opacity = '1'; btn.onclick = null;
+    } else {
+      btn.href = '#';
+      btn.onclick = (e)=>{ e.preventDefault(); App.toast('템플릿 링크가 곧 연결될 예정이에요! 🍞'); };
+    }
+    this._code = code;
+    location.hash = 'result='+code;
+    this.go('result');
+  },
+
+  share(){
+    const url = location.origin + location.pathname + '#result=' + (this._code||'');
+    const text = `나의 슈크림 MBTI 결과는 [${this._code}]! 너도 해봐 🍞`;
+    if(navigator.share){
+      navigator.share({ title:'슈크림 MBTI', text, url }).catch(()=>{});
+    } else if(navigator.clipboard){
+      navigator.clipboard.writeText(text+'\n'+url).then(()=>this.toast('링크를 복사했어요! 친구에게 붙여넣기 해줘 📋'));
+    } else {
+      this.toast(url);
+    }
+  },
+
+  restart(){
+    location.hash = '';
+    this.go('start');
+  },
+
+  go(name){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+name).classList.add('active');
+    document.querySelector('.app').scrollTop = 0;
+    window.scrollTo(0,0);
+  },
+
+  toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(this._tt);
+    this._tt = setTimeout(()=>t.classList.remove('show'), 2600);
+  }
+};
+
+App.init();
+</script>
+</body>
+</html>

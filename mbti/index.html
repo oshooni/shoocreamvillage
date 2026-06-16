@@ -690,7 +690,7 @@ const App = {
     const qt = document.getElementById('q-text');
     qt.textContent = q.q.replace(/<br\s*\/?>/gi,' ');
     qt.style.animation='none'; void qt.offsetWidth; qt.style.animation='fade .4s ease';
-    // 일러스트: 질문 순서에 맞는 이미지(img/q1.png ~ img/q12.png)
+    // 일러스트: 질문 순서에 맞는 이미지(q1.png ~ q12.png)
     document.getElementById('q-art').innerHTML = `<img src="q${this.idx+1}.png" alt="">`;
     // 보기 버튼: 한 줄로 들어가도록 글자 크기 자동 조절(안 되면 keep-all 줄바꿈)
     setBtnText(document.getElementById('ans-a'), q.a.t, 17, 12);

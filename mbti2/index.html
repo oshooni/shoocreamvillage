@@ -50,7 +50,7 @@
     width:100%;
     max-width:460px;
     min-height:100dvh;
-    background:var(--bg);
+    background:#fff;
     position:relative;
     overflow:hidden;
     display:flex; flex-direction:column;
@@ -143,8 +143,10 @@
     flex:1;
     display:flex; align-items:center; justify-content:center;
     min-height:170px;
+    margin:4px -22px 0;   /* 화면 좌우 패딩 상쇄 → 이미지 가로 꽉 채움 */
   }
-  .q-art svg, .q-art img{ width:84%; max-width:300px; height:auto; }
+  .q-art img{ width:100%; max-width:none; height:auto; display:block; }
+  .q-art svg{ width:84%; max-width:300px; height:auto; }
   .answers{ display:flex; flex-direction:column; gap:14px; margin-top:6px; }
   .answer{
     font-family:'Jua', sans-serif; font-weight:400;

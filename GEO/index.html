@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GEO/AEO 브랜드 진단</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Sora:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#070a0f;--surface:#0e1219;--border:#1e2530;
+  --green:#39d353;--yellow:#f0a500;--red:#ff4d4d;--blue:#4f9eff;
+  --text:#e8edf2;--muted:#6b7280;
+  --mono:'IBM Plex Mono',monospace;--sans:'Sora','Noto Sans KR',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+
+/* ── FORM ── */
+#vForm{max-width:680px;margin:0 auto;padding:64px 24px 80px}
+.pg-tag{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:3px;margin-bottom:20px}
+.pg-h1{font-size:clamp(38px,7vw,68px);font-weight:800;line-height:1.08;margin-bottom:14px}
+.pg-sub{color:var(--muted);font-size:15px;line-height:1.7;margin-bottom:52px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.fg{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+.fg label{font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;font-family:var(--mono)}
+.fg label .req{color:var(--red);margin-left:3px}
+.fg input,.fg select,.fg textarea{
+  background:var(--surface);border:1px solid var(--border);color:var(--text);
+  padding:14px 16px;border-radius:8px;font-size:15px;font-family:var(--sans);
+  transition:border-color .2s;outline:none;resize:vertical;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--green)}
+.fg select option{background:#1a1f2b}
+.fg textarea{min-height:96px}
+.fg .hint{font-size:12px;color:var(--muted)}
+.btn-go{
+  width:100%;padding:18px;background:var(--green);color:#000;
+  border:none;border-radius:10px;font-size:17px;font-weight:700;
+  cursor:pointer;margin-top:28px;font-family:var(--sans);letter-spacing:.5px;
+  transition:opacity .18s;
+}
+.btn-go:hover{opacity:.86}
+
+/* ── SCAN ── */
+#vScan{
+  display:none;position:fixed;inset:0;background:var(--bg);z-index:999;
+  align-items:center;justify-content:center;flex-direction:column;gap:20px;
+}
+#vScan.on{display:flex}
+.sc-tag{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:3px}
+.sc-brand{font-size:30px;font-weight:800;margin-top:6px}
+.sc-log{font-family:var(--mono);font-size:12px;color:var(--muted);width:340px;min-height:140px}
+.sc-line{padding:3px 0;animation:fi .3s forwards;opacity:0}
+.sc-line.ok{color:var(--green)}.sc-line.ng{color:var(--red)}.sc-line.yw{color:var(--yellow)}
+.sc-track{width:340px;height:2px;background:#1e2530;border-radius:2px;overflow:hidden;margin-top:12px}
+.sc-bar{height:100%;background:var(--green);width:0;transition:width .6s ease}
+@keyframes fi{to{opacity:1}}
+
+/* ── RESULTS ── */
+#vResults{display:none;max-width:900px;margin:0 auto;padding:48px 24px 80px}
+#vResults.on{display:block}
+.res-hd{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:24px;margin-bottom:36px}
+.res-brand-tag{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:6px}
+.res-title{font-size:24px;font-weight:700}
+.score-wrap{text-align:center;flex-shrink:0}
+.score-big{font-size:72px;font-weight:800;font-family:var(--mono);line-height:1}
+.score-denom{font-size:14px;color:var(--muted)}
+.grade-pill{display:inline-block;padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:8px}
+
+.analysis-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-left:3px solid var(--green);padding:18px 22px;border-radius:8px;
+  font-size:14px;line-height:1.75;color:#b0bec5;margin-bottom:32px;
+}
+.analysis-box strong{color:var(--text)}
+
+/* category bars */
+.cat-bars{display:grid;gap:10px;margin-bottom:40px}
+.cb-row{display:flex;align-items:center;gap:14px}
+.cb-lbl{font-size:12px;color:var(--muted);width:90px;text-align:right;flex-shrink:0}
+.cb-track{flex:1;height:7px;background:#1e2530;border-radius:4px;overflow:hidden}
+.cb-fill{height:100%;border-radius:4px;transition:width 1.1s cubic-bezier(.4,0,.2,1)}
+.cb-score{font-family:var(--mono);font-size:11px;color:var(--muted);width:44px;text-align:right;flex-shrink:0}
+
+/* tabs */
+.tabs{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border)}
+.tb{background:none;border:none;color:var(--muted);padding:12px 22px;cursor:pointer;
+  font-family:var(--sans);font-size:14px;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s}
+.tb.on{color:var(--green);border-bottom-color:var(--green)}
+.tp{display:none}.tp.on{display:block}
+
+/* ── CHECKLIST ── */
+.cat-sec{margin-bottom:32px}
+.cat-sec-hd{display:flex;align-items:center;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.cat-sec-name{font-weight:700;font-size:15px}
+.cat-sec-score{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:auto}
+
+.ci{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:7px;overflow:hidden}
+.ci-head{display:flex;align-items:center;gap:11px;padding:14px 16px;cursor:pointer;transition:background .13s}
+.ci-head:hover{background:#111820}
+.ci-icon{font-size:15px;flex-shrink:0;width:20px;text-align:center}
+.ci-name{flex:1;font-size:14px;font-weight:500}
+.ci-pts{font-family:var(--mono);font-size:11px;color:var(--muted);flex-shrink:0}
+.ci-chv{color:var(--muted);font-size:11px;flex-shrink:0;transition:transform .2s;margin-left:8px}
+.ci.open .ci-chv{transform:rotate(90deg)}
+.ci-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border)}
+.ci.open .ci-body{display:block}
+.ci-status{
+  font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6;font-style:italic;
+  padding:9px 12px;background:var(--bg);border-radius:6px;font-family:var(--mono);
+}
+.ci-status.ok{color:#39d353}.ci-status.yw{color:var(--yellow)}.ci-status.ng{color:#ff7a7a}
+.ci-why{font-size:13px;margin-top:10px;line-height:1.7;color:#9ba8b5}
+.ci-how-lbl{font-size:10px;color:var(--green);letter-spacing:1.5px;margin-top:14px;margin-bottom:6px;font-family:var(--mono)}
+.ci-how{font-family:var(--mono);font-size:12px;background:var(--bg);padding:12px 14px;
+  border-radius:6px;line-height:1.85;color:#7dbf8c;white-space:pre-wrap}
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.tag{font-size:10px;padding:3px 8px;border-radius:4px;font-family:var(--mono)}
+.t-must{background:rgba(255,77,77,.13);color:#ff8080}
+.t-opt{background:rgba(240,165,0,.13);color:var(--yellow)}
+.t-imp{background:rgba(57,211,83,.13);color:var(--green)}
+.t-ef{background:rgba(107,114,128,.13);color:var(--muted)}
+
+/* ── COMPETITOR ── */
+.comp-intro{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.comp-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+.comp-card.mine{border-color:var(--green)}
+.comp-mine-lbl{font-family:var(--mono);font-size:9px;color:var(--green);letter-spacing:2px;margin-bottom:4px}
+.comp-name{font-weight:700;font-size:15px;margin-bottom:2px}
+.comp-cat{font-size:11px;color:var(--muted);margin-bottom:14px}
+.comp-score{font-family:var(--mono);font-size:38px;font-weight:700;line-height:1}
+.comp-denom{font-size:11px;color:var(--muted)}
+.comp-fullbar{height:5px;background:#1e2530;border-radius:3px;margin-top:12px;overflow:hidden}
+.comp-fullbar-fill{height:100%;border-radius:3px}
+.comp-why{font-size:12px;color:#8a9bb0;margin-top:12px;line-height:1.55;padding-top:10px;border-top:1px solid var(--border)}
+.comp-vs{font-size:11px;font-family:var(--mono);margin-top:6px}
+
+/* ── ACTIONS ── */
+.act-sec{margin-bottom:32px}
+.act-sec-title{font-size:11px;letter-spacing:1.5px;font-family:var(--mono);
+  padding:6px 12px;border-radius:4px;display:inline-block;margin-bottom:12px}
+.t-must-sec{background:rgba(255,77,77,.1);color:#ff8080}
+.t-opt-sec{background:rgba(240,165,0,.1);color:var(--yellow)}
+.ac{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:7px;overflow:hidden}
+.ac-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;transition:background .13s}
+.ac-head:hover{background:#111820}
+.ac-rank{font-family:var(--mono);font-size:12px;color:var(--muted);width:18px;flex-shrink:0}
+.ac-title{flex:1;font-size:14px;font-weight:500}
+.ac-gain{font-size:11px;color:var(--green);font-family:var(--mono);flex-shrink:0}
+.ac-time{font-size:11px;color:var(--muted);font-family:var(--mono);flex-shrink:0}
+.ac-chv{color:var(--muted);font-size:11px;flex-shrink:0;transition:transform .2s;margin-left:8px}
+.ac.open .ac-chv{transform:rotate(90deg)}
+.ac-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border)}
+.ac.open .ac-body{display:block}
+.ac-why{font-size:13px;color:#9ba8b5;margin-top:12px;line-height:1.7}
+.ac-how-lbl{font-size:10px;color:var(--green);letter-spacing:1.5px;margin-top:14px;font-family:var(--mono)}
+.ac-how{font-family:var(--mono);font-size:12px;background:var(--bg);padding:12px 14px;
+  border-radius:6px;line-height:1.85;color:#7dbf8c;white-space:pre-wrap;margin-top:6px}
+
+/* back btn */
+.back-btn{background:none;border:1px solid var(--border);color:var(--muted);
+  padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-family:var(--sans);
+  margin-bottom:32px;transition:border-color .15s}
+.back-btn:hover{border-color:var(--text);color:var(--text)}
+
+@media(max-width:580px){
+  .form-row{grid-template-columns:1fr}
+  .res-hd{flex-direction:column}
+  .comp-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ STEP 1: FORM ══ -->
+<div id="vForm">
+  <div class="pg-tag">▸ GEO / AEO DIAGNOSTIC</div>
+  <h1 class="pg-h1">몇 점을 받고<br>있을까요?</h1>
+  <p class="pg-sub">브랜드 정보를 입력하면 AI가 자동으로 GEO/AEO 점수를 분석합니다.<br>ChatGPT, Perplexity, Gemini에서 내 브랜드의 인용 가능성을 진단합니다.</p>
+
+  <div class="form-row">
+    <div class="fg">
+      <label>브랜드명<span class="req">*</span></label>
+      <input type="text" id="inBrand" placeholder="예: 노슈니">
+    </div>
+    <div class="fg">
+      <label>업종 / 카테고리<span class="req">*</span></label>
+      <select id="inIndustry">
+        <option value="">선택하세요</option>
+        <option value="교육/강의">교육 / 강의</option>
+        <option value="전문가/컨설팅">전문가 / 컨설팅</option>
+        <option value="스타트업/SaaS">스타트업 / SaaS</option>
+        <option value="이커머스">이커머스</option>
+        <option value="미디어/콘텐츠">미디어 / 콘텐츠</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="fg">
+    <label>브랜드 설명</label>
+    <textarea id="inDesc" placeholder="어떤 서비스/콘텐츠를 제공하나요? 어떤 채널을 운영하나요?&#10;예: 노션(Notion)에 대해 설명하는 SNS 계정이자 노션 교육, 강의, 컨설팅을 하는 브랜드"></textarea>
+  </div>
+
+  <div class="fg">
+    <label>타겟 키워드</label>
+    <input type="text" id="inKeywords" placeholder="예: 노션, notion 강의, 노션 템플릿">
+    <span class="hint">AI 검색에서 노출되고 싶은 키워드 (쉼표 구분)</span>
+  </div>
+
+  <button class="btn-go" onclick="start()">→ 현황 진단 시작하기</button>
+</div>
+
+<!-- ══ STEP 2: SCAN ══ -->
+<div id="vScan">
+  <div style="text-align:center">
+    <div class="sc-tag">ANALYZING BRAND</div>
+    <div class="sc-brand" id="scBrand"></div>
+  </div>
+  <div class="sc-log" id="scLog"></div>
+  <div class="sc-track"><div class="sc-bar" id="scBar"></div></div>
+</div>
+
+<!-- ══ STEP 3: RESULTS ══ -->
+<div id="vResults">
+  <button class="back-btn" onclick="reset()">← 다시 진단하기</button>
+
+  <div class="res-hd">
+    <div>
+      <div class="res-brand-tag" id="rBrandTag"></div>
+      <div class="res-title">GEO / AEO 진단 결과</div>
+    </div>
+    <div class="score-wrap">
+      <div class="score-big" id="rScore" style="color:var(--green)">0</div>
+      <div class="score-denom">/ 100점</div>
+      <div class="grade-pill" id="rGrade"></div>
+    </div>
+  </div>
+
+  <div class="analysis-box" id="rAnalysis"></div>
+  <div class="cat-bars" id="rCatBars"></div>
+
+  <div class="tabs">
+    <button class="tb on" onclick="tab('checklist',this)">체크리스트 분석</button>
+    <button class="tb" onclick="tab('competitor',this)">경쟁사 비교</button>
+    <button class="tb" onclick="tab('actions',this)">실행 계획</button>
+  </div>
+
+  <div class="tp on" id="tab-checklist"></div>
+  <div class="tp" id="tab-competitor"></div>
+  <div class="tp" id="tab-actions"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+
+const CATS = {
+  content: {label:'콘텐츠 구조',  color:'#4f9eff', max:25},
+  tech:    {label:'기술 최적화',   color:'#a78bfa', max:15},
+  entity:  {label:'엔티티 권위',   color:'#39d353', max:30},
+  media:   {label:'언드미디어',    color:'#f0a500', max:20},
+  monitor: {label:'AI 모니터링',  color:'#ff6b6b', max:10},
+};
+
+// infer(signals) → {status:'done'|'partial'|'none', score}
+const SIGS = [
+  {id:'bluf',cat:'content',max:6,must:true,impact:9,effort:2,time:'2~3시간',
+   title:'BLUF 구조 (첫 50단어 핵심 답변)',
+   why:'AI는 첫 문단에서 답변을 추출합니다. 결론을 먼저 쓰지 않으면 AI가 인용을 건너뜁니다. 이것만 바꿔도 인용 확률이 평균 40% 상승합니다.',
+   how:`콘텐츠 첫 문단 구조를 바꾸세요:
+
+[기존] "오늘은 노션 데이터베이스에 대해 알아보겠습니다. 노션은..."
+[BLUF] "노션 데이터베이스는 스프레드시트와 관계형 DB를 결합한 기능으로,
+업무 자동화에 쓰입니다. 이 글에서는 실제 세팅법 3가지를 다룹니다."
+
+→ 첫 2문장에 [키워드 + 정의 + 용도]를 담으세요.
+→ "오늘은~", "안녕하세요~" 도입부를 삭제하세요.`,
+   infer(s){
+     if(s.hasYoutube&&s.hasEdu) return {status:'partial',score:2};
+     return {status:'none',score:0};
+   }},
+
+  {id:'stats',cat:'content',max:5,must:false,impact:7,effort:3,time:'편당 1~2시간',
+   title:'통계·출처·데이터 인용',
+   why:'수치가 있는 콘텐츠는 AI 인용 확률이 41% 높습니다 (Princeton KDD 2024). AI는 검증 가능한 정보를 선호합니다.',
+   how:`데이터 인용 방법:
+"노션 사용자는 전 세계 3,500만 명+ (Notion, 2024)"
+"업무 생산성 47% 향상 (Forrester Research, 2023)"
+
+→ 신뢰 출처를 괄호로 명시하세요.
+→ 자체 데이터(수강생 수, 완강률 등)도 강력한 인용 소스입니다.`,
+   infer(s){
+     if(s.hasEdu&&s.descLen>100) return {status:'partial',score:2};
+     if(s.hasBlog) return {status:'partial',score:1};
+     return {status:'none',score:0};
+   }},
+
+  {id:'faqcontent',cat:'content',max:5,must:true,impact:8,effort:2,time:'1~2시간',
+   title:'FAQ 섹션 콘텐츠',
+   why:'FAQPage 구조는 AI Overview 인용 확률을 3.2배 높입니다. Q&A 형식이 AI 학습 데이터의 핵심 패턴입니다.',
+   how:`각 주요 페이지 하단에 FAQ를 추가하세요 (5~8개):
+
+Q: 노션이란 무엇인가요?
+A: 노션은 메모, 할일, 데이터베이스를 하나로 합친 협업 도구입니다.
+
+Q: 노션 강의는 몇 시간짜리인가요?
+A: 기초반 4시간, 심화반 8시간으로 구성됩니다.
+
+Q: 노션 초보도 들을 수 있나요?
+A: 네, 완전 초보 기준으로 설계되었습니다.`,
+   infer(s){
+     if(s.hasBlog&&s.descLen>150) return {status:'partial',score:1};
+     return {status:'none',score:0};
+   }},
+
+  {id:'headings',cat:'content',max:4,must:false,impact:5,effort:1,time:'30분/페이지',
+   title:'질문형 헤딩 구조',
+   why:'AI는 "노션이란 무엇인가?" 같은 질문형 헤딩을 검색 쿼리와 직접 매칭합니다. 단순 소제목보다 인용 확률이 높습니다.',
+   how:`기존: "노션 데이터베이스"
+변경: "노션 데이터베이스란 무엇인가?"
+
+기존: "강의 특징"
+변경: "이 강의가 다른 노션 강의와 다른 점은?"
+
+기존: "수강 후기"
+변경: "수강생들이 가장 많이 달라진 점은?"
+
+→ H2, H3를 질문형으로 전환하세요.`,
+   infer(s){
+     if(s.hasEdu) return {status:'partial',score:2};
+     if(s.hasBlog) return {status:'partial',score:1};
+     return {status:'none',score:0};
+   }},
+
+  {id:'fresh',cat:'content',max:5,must:true,impact:6,effort:2,time:'주 1회 30분',
+   title:'콘텐츠 신선도 (주기적 업데이트)',
+   why:'14일 이상 업데이트되지 않은 콘텐츠는 AI 인용률이 23% 감소합니다. AI 엔진은 최신 정보를 강하게 선호합니다.',
+   how:`매주 핵심 페이지에 소소한 업데이트:
+- "2026년 기준" 날짜 명시 추가
+- 통계 수치 최신 데이터로 교체
+- FAQ 1~2개 추가
+- 최근 사례 1개 추가
+
+→ 전면 재작성 없이도 신선도 유지 가능
+→ 마지막 수정일을 페이지에 표시하세요.`,
+   infer(s){
+     if(s.hasSNS) return {status:'done',score:5};
+     if(s.hasBlog) return {status:'partial',score:3};
+     return {status:'none',score:0};
+   }},
+
+  // TECH
+  {id:'robots',cat:'tech',max:5,must:true,impact:10,effort:1,time:'30분',
+   title:'robots.txt AI 봇 허용',
+   why:'GPTBot(ChatGPT), ClaudeBot(Claude), PerplexityBot가 차단되면 아무리 콘텐츠가 좋아도 AI 검색에 절대 인용되지 않습니다. 가장 먼저 해야 할 설정입니다.',
+   how:`robots.txt 파일에 아래 내용을 추가하세요:
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+→ 파일이 없으면 사이트 루트에 새로 생성하세요.
+→ 확인: yoursite.com/robots.txt 에서 브라우저로 확인`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  {id:'orgschema',cat:'tech',max:5,must:true,impact:8,effort:3,time:'2~3시간',
+   title:'Organization Schema (JSON-LD)',
+   why:'구조화 데이터는 AI가 브랜드 정보를 정확하게 파악하는 핵심 신호입니다. sameAs로 소셜 계정을 연결하면 엔티티 매핑이 강화됩니다.',
+   how:`사이트 <head>에 추가하세요:
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "브랜드명",
+  "description": "한 줄 설명",
+  "url": "https://yoursite.com",
+  "sameAs": [
+    "https://instagram.com/계정명",
+    "https://youtube.com/채널주소",
+    "https://linkedin.com/in/계정명"
+  ]
+}
+<\/script>
+
+→ WordPress: Yoast SEO 플러그인으로 자동 설정 가능`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  {id:'faqschema',cat:'tech',max:5,must:true,impact:9,effort:2,time:'1~2시간',
+   title:'FAQPage Schema (JSON-LD)',
+   why:'FAQPage 스키마는 Google AI Overview 인용률을 3.2배 높이는 가장 효과적인 기술 전술입니다. FAQ 콘텐츠와 반드시 함께 적용하세요.',
+   how:`<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "노션이란 무엇인가요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "노션은 메모, 할일, 데이터베이스를 하나로 합친..."
+      }
+    }
+  ]
+}
+<\/script>
+
+→ Google Search Console에서 적용 확인 가능`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  // ENTITY
+  {id:'wikidata',cat:'entity',max:10,must:true,impact:10,effort:3,time:'2~3시간',
+   title:'Wikidata 브랜드 등재',
+   why:'Wikidata는 AI 엔티티 인식의 상관계수 ρ=0.810으로 가장 강력한 신호입니다. Wikipedia·ChatGPT·Gemini 모두 이 데이터를 활용합니다.',
+   how:`1. wikidata.org 접속 → 계정 생성 (무료)
+2. "Create new item" 클릭
+3. 브랜드명 입력 (한국어 + 영어)
+4. P31 (instance of) = Q43229 (organization) 추가
+5. P856 (website URL) 추가
+6. P17 (country) = 대한민국 추가
+7. P2013 (Instagram), P2397 (YouTube) 추가
+8. 저장 → 약 2~4주 후 AI 인식 시작`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  {id:'kp',cat:'entity',max:8,must:false,impact:7,effort:3,time:'1~3개월',
+   title:'Google 지식 패널 / Knowledge Graph',
+   why:'Google에서 브랜드명 검색 시 오른쪽에 지식 패널이 뜨면 AI가 브랜드를 독립 엔티티로 인식합니다. Gemini 인용에 직접 영향을 미칩니다.',
+   how:`단기 (즉시):
+- Google Business Profile 100% 완성
+- Google Search Console에 브랜드명 등록
+
+중기 (Wikidata 등재 후 자연 생성 대기):
+- Wikidata 등재 완료 후 4~8주 대기
+- 언론 보도 축적 시 생성 속도 빨라짐
+
+장기:
+- Wikipedia 본문 내 브랜드 언급 확보`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  {id:'profiles',cat:'entity',max:7,must:true,impact:7,effort:2,time:'2~4시간',
+   title:'LinkedIn · Crunchbase 프로필 최적화',
+   why:'Copilot은 LinkedIn을, 모든 AI는 Crunchbase를 신뢰 신호로 활용합니다. 프로필이 없거나 불완전하면 AI가 브랜드 정보를 확인할 수 없습니다.',
+   how:`LinkedIn 회사 페이지 (개인 프로필과 별도):
+- 회사 페이지 생성 (무료)
+- About에 브랜드 설명 전문 작성
+- 서비스/제품 전체 등록
+- 팔로워 100명+ 목표
+
+Crunchbase:
+- crunchbase.com → Add Company
+- 창업일, 분류, 설명, URL 완성
+- 소셜 링크 전체 연결`,
+   infer(s){
+     if(s.hasSNS||s.hasConsulting) return {status:'partial',score:3};
+     return {status:'none',score:0};
+   }},
+
+  {id:'llmstxt',cat:'entity',max:5,must:false,impact:6,effort:1,time:'30분',
+   title:'llms.txt 파일 생성',
+   why:'AI 에이전트에게 브랜드 핵심 정보를 직접 전달하는 새 표준입니다. 이미 844,000개+ 사이트가 채택했으며, 지금이 선점 시기입니다.',
+   how:`사이트 루트에 /llms.txt 파일을 만드세요:
+
+# 브랜드명
+> 브랜드 한 줄 설명
+
+## 서비스
+- [강의 페이지](URL): 노션 기초~심화 강의
+- [컨설팅 안내](URL): 1:1 노션 세팅 컨설팅
+
+## 주요 콘텐츠
+- [노션이란](URL): 초보를 위한 노션 완전 입문
+
+## 연락처
+- 인스타그램: @계정명
+- 이메일: your@email.com`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  // MEDIA
+  {id:'community',cat:'media',max:7,must:false,impact:8,effort:4,time:'주 2~3시간',
+   title:'커뮤니티·Reddit·Quora 전문 답변',
+   why:'Reddit은 LLM 학습 데이터의 40.1%를 차지합니다. 관련 커뮤니티에서 꾸준히 전문 답변을 달면 브랜드가 AI 훈련 데이터에 포함됩니다.',
+   how:`한국 커뮤니티 (단기):
+- 노션 관련 네이버 카페 전문 답변
+- 클리앙, 뽐뿌 관련 질문 답변
+- 오픈 카카오톡 방 전문가 참여
+
+글로벌 (중기, AI 학습 직접 영향):
+- Reddit r/Notion 영문 답변
+- Quora "What is Notion?" 류 답변
+- 브랜드 직접 홍보 금지 → 순수 가치 제공만`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  {id:'pr',cat:'media',max:6,must:false,impact:8,effort:4,time:'월 5~10시간',
+   title:'언론·미디어 언급 확보',
+   why:'AI가 인용하는 출처의 48~85%는 외부 미디어입니다. 자사 사이트보다 제3자 언급이 훨씬 강력한 신호입니다.',
+   how:`즉시 시작:
+- HARO (helpareporter.com) 무료 가입
+- Featured.com 전문가 프로필 등록
+- 매일 30분 → 기자 질문에 전문가 답변 보내기
+
+한국 전략:
+- 브런치 에디터스 픽 도전 (검증된 채널)
+- 관련 유튜브 채널 콜라보 제안
+- 업계 뉴스레터 기고 요청`,
+   infer(s){
+     if(s.hasNews) return {status:'partial',score:2};
+     if(s.hasYoutube) return {status:'partial',score:1};
+     return {status:'none',score:0};
+   }},
+
+  {id:'podcast',cat:'media',max:4,must:false,impact:5,effort:3,time:'편당 4~8시간',
+   title:'팟캐스트·영상 출연 + 트랜스크립트',
+   why:'YouTube 자막과 팟캐스트 트랜스크립트는 LLM 학습 데이터의 23%를 구성합니다. 출연 후 텍스트로 변환해 사이트에 게시하면 이중 효과입니다.',
+   how:`1. 관련 유튜브 채널·팟캐스트에 콜라보 제안 DM
+2. 출연 영상 자동 자막 → 텍스트 추출
+3. 사이트에 "출연 / 인터뷰" 페이지 생성
+4. 에피소드 요약 + 전문 게시
+
+→ 자막 추출: YouTube Studio → 자막 → 텍스트 파일 다운로드`,
+   infer(s){
+     if(s.hasYoutube) return {status:'partial',score:1};
+     return {status:'none',score:0};
+   }},
+
+  {id:'reviews',cat:'media',max:3,must:false,impact:4,effort:2,time:'2~4주',
+   title:'리뷰·평가 플랫폼 등재',
+   why:'리뷰 플랫폼의 언급은 AI가 브랜드 신뢰성을 판단하는 외부 검증 신호입니다. 기존 수강생에게 요청만 해도 시작할 수 있습니다.',
+   how:`국내:
+- 네이버 스마트스토어 / 플레이스 리뷰 관리
+- 클래스101·탈잉 등 플랫폼 입점 검토
+
+글로벌 (AI 직접 학습):
+- Trustpilot.com 등록 (무료)
+- G2.com 등록 (교육/SaaS)
+
+→ 기존 수강생 5~10명에게 리뷰 요청 이메일 발송`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  // MONITOR
+  {id:'ga4',cat:'monitor',max:5,must:true,impact:6,effort:2,time:'2시간',
+   title:'GA4 AI 트래픽 세그먼트 설정',
+   why:'AI 검색에서 오는 트래픽을 추적하지 않으면 GEO 전략의 효과를 전혀 측정할 수 없습니다. 기준선 없이는 개선도 없습니다.',
+   how:`GA4 → 탐색 → 세그먼트 생성:
+세그먼트명: AI 검색 유입
+조건: 소스/매체 → 정규식 포함:
+
+chatgpt\\.com|perplexity\\.ai|claude\\.ai|
+gemini\\.google\\.com|copilot\\.microsoft\\.com|
+phind\\.com|you\\.com
+
+→ 대시보드에 고정하고 매주 확인하세요.`,
+   infer(s){ return {status:'none',score:0}; }},
+
+  {id:'audit',cat:'monitor',max:5,must:true,impact:7,effort:1,time:'주 20분',
+   title:'AI 검색 정기 모니터링 루틴',
+   why:'GEO는 변화가 빠릅니다. 주간으로 확인하지 않으면 경쟁사에 뒤처지는 시점을 놓칩니다. 20분으로 전략 방향을 잡을 수 있습니다.',
+   how:`매주 20분 루틴:
+1. ChatGPT 입력: "[키워드] 추천해줘 / 알려줘"
+2. Perplexity에 동일 쿼리
+3. Gemini에 동일 쿼리
+4. 결과 스프레드시트 기록
+   → 내 브랜드 등장: ✅ / 없음: ❌ / 경쟁사: 누구?
+
+→ 매달 같은 쿼리로 비교해 추이를 파악하세요.`,
+   infer(s){ return {status:'none',score:0}; }},
+];
+
+// ═══════════════════════════════════════════════
+// INDUSTRY BENCHMARKS
+// ═══════════════════════════════════════════════
+
+const IND = {
+  '교육/강의':{avg:18,
+    comps:[
+      {name:'패스트캠퍼스',score:52,why:'구조화 커리큘럼 페이지, FAQPage 스키마, 유튜브 트랜스크립트 활용, Wikidata 등재'},
+      {name:'클래스101',score:46,why:'Organization Schema 적용, 수강 리뷰 플랫폼 최적화, 콘텐츠 클러스터 구축'},
+      {name:'개인 강사 평균',score:14,why:'SNS 콘텐츠 있으나 기술 최적화·엔티티 권위 미착수'},
+    ]},
+  '전문가/컨설팅':{avg:22,
+    comps:[
+      {name:'맥킨지 코리아',score:68,why:'Wikipedia 등재, 언론 수백 건, 구조화 리포트 AI 인용 최적화'},
+      {name:'딜로이트 코리아',score:62,why:'Wikidata 등재, 전문 백서 다수, 국제 언론 인용'},
+      {name:'1인 전문가 평균',score:18,why:'LinkedIn 있으나 스키마·Wikidata·외부 언급 미흡'},
+    ]},
+  '스타트업/SaaS':{avg:28,
+    comps:[
+      {name:'토스',score:64,why:'Crunchbase 완성, Wikipedia 등재, 언론 수천 건, FAQPage 스키마'},
+      {name:'뤼튼',score:42,why:'AI 트렌드 콘텐츠, Reddit 영문 답변, 구조화 기술 블로그'},
+      {name:'초기 스타트업 평균',score:19,why:'기술 블로그, GitHub 존재감, 개발자 커뮤니티 부분 참여'},
+    ]},
+  '이커머스':{avg:19,
+    comps:[
+      {name:'무신사',score:56,why:'상품 Schema 완성, 리뷰 플랫폼 연동, 유튜브·콘텐츠 마케팅'},
+      {name:'컬리',score:48,why:'콘텐츠 마케팅 강화, 언론 인용 많음, FAQ 구조 콘텐츠'},
+      {name:'중소 이커머스 평균',score:12,why:'상품 페이지 최적화 미흡, 외부 언급 거의 없음'},
+    ]},
+  '미디어/콘텐츠':{avg:24,
+    comps:[
+      {name:'뉴닉',score:58,why:'커뮤니티 활성, 언론 인용 많음, 구조화 뉴스레터 콘텐츠'},
+      {name:'스요레터',score:40,why:'타깃 커뮤니티 내 인용, 전문 출처 활용 콘텐츠'},
+      {name:'개인 미디어 평균',score:17,why:'콘텐츠는 있으나 기술 최적화·엔티티 권위 미흡'},
+    ]},
+  '기타':{avg:16,
+    comps:[
+      {name:'선도 브랜드',score:51,why:'체계적 콘텐츠 전략, 언론 인용 다수, 스키마 적용'},
+      {name:'중간 브랜드',score:26,why:'일부 채널 최적화, 부분적 기술 설정'},
+      {name:'후발 브랜드 평균',score:10,why:'AI 검색 최적화 미착수'},
+    ]},
+};
+
+// ═══════════════════════════════════════════════
+// INFERENCE ENGINE
+// ═══════════════════════════════════════════════
+
+function extractSignals(desc, industry, keywords) {
+  const d = (desc||'').toLowerCase();
+  const k = (keywords||'').toLowerCase();
+  return {
+    hasSNS:       /sns|인스타|유튜브|youtube|페이스북|틱톡|소셜/.test(d),
+    hasBlog:      /블로그|blog|브런치|포스팅|글/.test(d),
+    hasYoutube:   /유튜브|youtube|영상|채널|동영상/.test(d),
+    hasNews:      /언론|뉴스|기사|미디어|인터뷰|보도/.test(d),
+    hasConsulting:/컨설팅|consulting|코칭|코치|자문|상담/.test(d),
+    hasEdu:       /교육|강의|강사|수업|수강|커리큘럼|가르/.test(d)||industry==='교육/강의',
+    descLen:      (desc||'').length,
+  };
+}
+
+function runInference(desc, industry, keywords) {
+  const s = extractSignals(desc, industry, keywords);
+  const result = {};
+  SIGS.forEach(sig => { result[sig.id] = sig.infer(s); });
+  return result;
+}
+
+function calcScores(inferred) {
+  let total = 0;
+  const cats = {};
+  Object.keys(CATS).forEach(c => { cats[c] = 0; });
+  SIGS.forEach(sig => {
+    const sc = inferred[sig.id]?.score||0;
+    total += sc;
+    cats[sig.cat] = (cats[sig.cat]||0) + sc;
+  });
+  return {total, cats};
+}
+
+function gradeOf(n) {
+  if(n>=70) return {g:'A',lbl:'우수',color:'#39d353',bg:'rgba(57,211,83,.15)'};
+  if(n>=50) return {g:'B',lbl:'양호',color:'#4f9eff',bg:'rgba(79,158,255,.15)'};
+  if(n>=30) return {g:'C',lbl:'보통',color:'#f0a500',bg:'rgba(240,165,0,.15)'};
+  if(n>=15) return {g:'D',lbl:'위험',color:'#ff7a00',bg:'rgba(255,122,0,.15)'};
+  return    {g:'F',lbl:'AI 비가시',color:'#ff4d4d',bg:'rgba(255,77,77,.15)'};
+}
+
+// ═══════════════════════════════════════════════
+// UI FLOW
+// ═══════════════════════════════════════════════
+
+let G = {};
+
+function start() {
+  const brand = document.getElementById('inBrand').value.trim();
+  const industry = document.getElementById('inIndustry').value;
+  if(!brand||!industry){ alert('브랜드명과 업종을 입력해주세요.'); return; }
+  const desc = document.getElementById('inDesc').value.trim();
+  const kw = document.getElementById('inKeywords').value.trim();
+  G = {brand, industry, desc, kw};
+
+  document.getElementById('vForm').style.display = 'none';
+  const scan = document.getElementById('vScan');
+  scan.classList.add('on');
+  document.getElementById('scBrand').textContent = brand;
+
+  runScan(brand, industry, () => {
+    const inferred = runInference(desc, industry, kw);
+    const {total, cats} = calcScores(inferred);
+    G.inferred = inferred; G.total = total; G.cats = cats;
+    scan.classList.remove('on');
+    renderResults();
+  });
+}
+
+function runScan(brand, industry, cb) {
+  const log = document.getElementById('scLog');
+  const bar = document.getElementById('scBar');
+  log.innerHTML = '';
+  const lines = [
+    {txt:`> 브랜드 정보 수신... ${brand} (${industry})`, cls:'ok'},
+    {txt:'> 콘텐츠 구조 패턴 분석...', cls:'ok'},
+    {txt:'> 기술적 AI 신호 스캔...', cls:'ng'},
+    {txt:'> 엔티티 권위 데이터 조회...', cls:'ng'},
+    {txt:'> 언드미디어 신호 확인...', cls:'ng'},
+    {txt:`> ${industry} 업계 경쟁사 비교...`, cls:'yw'},
+    {txt:'> 실행 계획 우선순위 생성...', cls:'ok'},
+  ];
+  lines.forEach((l,i) => {
+    setTimeout(() => {
+      const d = document.createElement('div');
+      d.className = `sc-line ${l.cls}`;
+      d.textContent = l.txt;
+      log.appendChild(d);
+      bar.style.width = `${(i+1)/lines.length*100}%`;
+    }, i*380);
+  });
+  setTimeout(cb, lines.length*380+300);
+}
+
+function renderResults() {
+  const {brand, industry, desc, kw, inferred, total, cats} = G;
+  const gr = gradeOf(total);
+  const indData = IND[industry]||IND['기타'];
+
+  document.getElementById('rBrandTag').textContent = `${brand} · ${industry}`;
+  const scoreEl = document.getElementById('rScore');
+  scoreEl.textContent = total;
+  scoreEl.style.color = gr.color;
+  const gpill = document.getElementById('rGrade');
+  gpill.textContent = `${gr.g} · ${gr.lbl}`;
+  gpill.style.background = gr.bg; gpill.style.color = gr.color;
+
+  // Analysis text
+  const avg = indData.avg;
+  const diff = total - avg;
+  const diffTxt = diff>=0 ? `<strong style="color:#39d353">+${diff}점</strong>` : `<strong style="color:#ff4d4d">${diff}점</strong>`;
+  const techZero = cats.tech===0;
+  const entityLow = cats.entity<10;
+  const hasSNS = /sns|인스타|유튜브|youtube/.test((desc||'').toLowerCase());
+  const contentNote = hasSNS ? '콘텐츠 업데이트 활동은 확인됩니다.' : '콘텐츠 활동 신호가 부족합니다.';
+
+  document.getElementById('rAnalysis').innerHTML =
+    `<strong>${brand}</strong>의 현재 GEO/AEO 점수는 <strong>${total}/100점</strong>으로, 업계 평균 ${avg}점 대비 ${diffTxt}입니다. `+
+    `${contentNote} `+
+    (techZero ? `<strong>기술적 AI 신호(스키마·robots.txt·llms.txt)</strong>가 전혀 적용되어 있지 않습니다. ` : '')+
+    (entityLow ? `<strong>엔티티 권위(Wikidata·지식 패널)</strong>가 구축되지 않아 AI가 브랜드를 독립 개체로 인식하지 못하고 있습니다. ` : '')+
+    `지금 당장 robots.txt 수정 + FAQPage 스키마 + Wikidata 등재 3가지만 실행해도 <strong>+20~30점</strong> 향상이 가능합니다.`;
+
+  // Cat bars
+  document.getElementById('rCatBars').innerHTML = Object.entries(CATS).map(([k,c])=>{
+    const sc = cats[k]||0;
+    const pct = Math.round(sc/c.max*100);
+    return `<div class="cb-row">
+      <div class="cb-lbl">${c.label}</div>
+      <div class="cb-track"><div class="cb-fill" style="width:0;background:${c.color}" data-pct="${pct}"></div></div>
+      <div class="cb-score">${sc}/${c.max}</div>
+    </div>`;
+  }).join('');
+
+  // Animate bars
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.cb-fill').forEach(el=>{
+      el.style.width = el.dataset.pct+'%';
+    });
+  }));
+
+  buildChecklist(inferred);
+  buildCompetitor(indData, total, cats);
+  buildActions(inferred);
+
+  document.getElementById('vResults').classList.add('on');
+  window.scrollTo(0,0);
+}
+
+function buildChecklist(inferred) {
+  const el = document.getElementById('tab-checklist');
+  let html = '';
+  Object.entries(CATS).forEach(([cKey, cat])=>{
+    const sigs = SIGS.filter(s=>s.cat===cKey);
+    const catSc = sigs.reduce((a,s)=>a+(inferred[s.id]?.score||0),0);
+    html += `<div class="cat-sec">
+      <div class="cat-sec-hd">
+        <div class="cat-sec-name">${cat.label}</div>
+        <div class="cat-sec-score">${catSc}/${cat.max}점</div>
+      </div>`;
+    sigs.forEach(sig=>{
+      const res = inferred[sig.id]||{status:'none',score:0};
+      const icon = res.status==='done'?'✅':res.status==='partial'?'⚠️':'❌';
+      const stCls = res.status==='done'?'ok':res.status==='partial'?'yw':'ng';
+      const stMsg = res.status==='done'
+        ? '✓ 분석 결과: 현재 적용된 것으로 판단됩니다.'
+        : res.status==='partial'
+        ? '△ 분석 결과: 부분적으로 적용되어 있으나 강화가 필요합니다.'
+        : '✗ 분석 결과: 현재 적용되지 않은 것으로 판단됩니다.';
+      const mustBadge = sig.must?'<span class="tag t-must">필수</span>':'<span class="tag t-opt">선택</span>';
+      html += `<div class="ci" id="ci-${sig.id}">
+        <div class="ci-head" onclick="toggleCI('${sig.id}')">
+          <div class="ci-icon">${icon}</div>
+          <div class="ci-name">${sig.title}</div>
+          <div class="ci-pts">${res.score}/${sig.max}pt</div>
+          <div class="ci-chv">▶</div>
+        </div>
+        <div class="ci-body">
+          <div class="ci-status ${stCls}">${stMsg}</div>
+          <div class="ci-why">${sig.why}</div>
+          <div class="ci-how-lbl">▸ 실행 방법</div>
+          <div class="ci-how">${sig.how}</div>
+          <div class="tag-row">
+            ${mustBadge}
+            <span class="tag t-imp">효과 ${sig.impact}/10</span>
+            <span class="tag t-ef">난이도 ${sig.effort}/5</span>
+            <span class="tag t-ef">⏱ ${sig.time}</span>
+          </div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function buildCompetitor(indData, myScore, myCats) {
+  const el = document.getElementById('tab-competitor');
+  const avg = indData.avg;
+  const myGr = gradeOf(myScore);
+  let html = `<p class="comp-intro">
+    업계 평균 <strong style="color:var(--text)">${avg}점</strong> ·
+    내 점수 <strong style="color:${myGr.color}">${myScore}점</strong> ·
+    차이 <strong style="color:${myScore>=avg?'#39d353':'#ff4d4d'}">${myScore>=avg?'+':''}${myScore-avg}점</strong>
+  </p><div class="comp-grid">`;
+
+  // My card
+  html += `<div class="comp-card mine">
+    <div class="comp-mine-lbl">▸ 내 브랜드</div>
+    <div class="comp-name">${G.brand}</div>
+    <div class="comp-cat">${G.industry}</div>
+    <div class="comp-score" style="color:${myGr.color}">${myScore}</div>
+    <div class="comp-denom">/ 100점 · ${myGr.lbl}</div>
+    <div class="comp-fullbar" style="margin-top:10px">
+      <div class="comp-fullbar-fill" style="width:${myScore}%;background:${myGr.color}"></div>
+    </div>
+    <div style="margin-top:12px">
+      ${Object.entries(CATS).map(([k,c])=>{
+        const sc=myCats[k]||0; const pct=Math.round(sc/c.max*100);
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <div style="font-size:10px;color:var(--muted);width:62px;flex-shrink:0">${c.label}</div>
+          <div style="flex:1;height:3px;background:#1e2530;border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${c.color};border-radius:2px"></div>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);width:22px">${sc}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  indData.comps.forEach(comp=>{
+    const g = gradeOf(comp.score);
+    html += `<div class="comp-card">
+      <div class="comp-name">${comp.name}</div>
+      <div class="comp-score" style="color:${g.color}">${comp.score}</div>
+      <div class="comp-denom">/ 100점 · ${g.lbl}</div>
+      <div class="comp-fullbar">
+        <div class="comp-fullbar-fill" style="width:${comp.score}%;background:${g.color};opacity:.75"></div>
+      </div>
+      <div class="comp-vs" style="color:${comp.score>myScore?'#ff7070':'#39d353'}">
+        ${comp.score>myScore?`▲ 경쟁사가 ${comp.score-myScore}점 앞섬`:`▼ 내 브랜드가 ${myScore-comp.score}점 앞섬`}
+      </div>
+      <div class="comp-why">💡 ${comp.why}</div>
+    </div>`;
+  });
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function buildActions(inferred) {
+  const el = document.getElementById('tab-actions');
+  const toFix = SIGS.filter(s=>(inferred[s.id]?.status||'none')!=='done')
+    .sort((a,b)=>{ if(a.must!==b.must) return a.must?-1:1; return b.impact-a.impact; });
+
+  const must = toFix.filter(s=>s.must);
+  const opt = toFix.filter(s=>!s.must);
+
+  function renderSec(items, secCls, title) {
+    if(!items.length) return '';
+    let h = `<div class="act-sec"><div class="act-sec-title ${secCls}">${title}</div>`;
+    items.forEach((sig,i)=>{
+      const res = inferred[sig.id]||{score:0};
+      const gap = sig.max-(res.score||0);
+      h += `<div class="ac" id="ac-${sig.id}">
+        <div class="ac-head" onclick="toggleAC('${sig.id}')">
+          <div class="ac-rank">${i+1}</div>
+          <div class="ac-title">${sig.title}</div>
+          <div class="ac-gain">+${gap}pt 가능</div>
+          <div class="ac-time">${sig.time}</div>
+          <div class="ac-chv">▶</div>
+        </div>
+        <div class="ac-body">
+          <div class="ac-why">${sig.why}</div>
+          <div class="ac-how-lbl">▸ 실행 방법</div>
+          <div class="ac-how">${sig.how}</div>
+        </div>
+      </div>`;
+    });
+    h += '</div>';
+    return h;
+  }
+
+  el.innerHTML = renderSec(must,'t-must-sec','필수 — 반드시 해야 할 것') +
+                 renderSec(opt,'t-opt-sec','선택 — 하면 좋은 것');
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+
+function toggleCI(id){ document.getElementById('ci-'+id).classList.toggle('open'); }
+function toggleAC(id){ document.getElementById('ac-'+id).classList.toggle('open'); }
+
+function tab(name, btn) {
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tab-'+name).classList.add('on');
+}
+
+function reset() {
+  document.getElementById('vResults').classList.remove('on');
+  document.getElementById('vForm').style.display = '';
+  document.getElementById('scLog').innerHTML = '';
+  document.getElementById('scBar').style.width = '0';
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

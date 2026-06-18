@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GEO/AEO Writer — AI 최적화 아티클 생성기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --surface: #ffffff;
+      --accent: #1c4a3b;
+      --accent-light: #2d6b56;
+      --gold: #c8882a;
+      --gold-light: #e8a84a;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --border: #ddd8ce;
+      --radius: 12px;
+      --shadow: 0 2px 16px rgba(0,0,0,0.08);
+      --mono: "DM Mono", monospace;
+      --sans: "Noto Sans KR", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: var(--accent);
+      color: #fff;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo-group { flex: 1; }
+    .logo-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    header h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; }
+    .header-badge {
+      background: var(--gold);
+      font-size: 11px;
+      font-family: var(--mono);
+      padding: 4px 11px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+    }
+    .settings-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: var(--sans);
+      transition: background 0.15s;
+    }
+    .settings-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── API 키 배너 ── */
+    .key-banner {
+      background: #fffbeb;
+      border-bottom: 1px solid #fcd34d;
+      padding: 14px 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+    .key-banner input {
+      flex: 1;
+      max-width: 420px;
+      padding: 8px 14px;
+      border: 1.5px solid #fcd34d;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+    }
+    .key-banner input:focus { border-color: var(--gold); }
+    .key-save-btn {
+      padding: 8px 18px;
+      background: var(--gold);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .key-save-btn:hover { background: var(--gold-light); }
+    .key-status { font-size: 12px; color: #92400e; }
+
+    /* ── 컨테이너 ── */
+    .container {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 36px 24px 60px;
+    }
+
+    /* ── 카드 공통 ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 32px;
+      margin-bottom: 20px;
+    }
+    .card-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    /* ── 탭 ── */
+    .tabs {
+      display: flex;
+      gap: 3px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 22px;
+      width: fit-content;
+    }
+    .tab {
+      padding: 7px 18px;
+      border: none;
+      background: transparent;
+      border-radius: 7px;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── 인풋 ── */
+    .url-row { display: flex; gap: 10px; }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 11px 15px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 190px; line-height: 1.65; }
+
+    .fetch-btn {
+      padding: 11px 20px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .fetch-btn:hover { background: var(--accent-light); }
+    .fetch-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    .url-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .url-preview {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-left: 3px solid var(--accent);
+      display: none;
+      line-height: 1.5;
+    }
+
+    /* ── 옵션 행 ── */
+    .options-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+    .first-gen-note {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .first-gen-note strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── 생성 버튼 ── */
+    .generate-btn {
+      margin-left: auto;
+      padding: 13px 34px;
+      background: var(--gold);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .generate-btn:hover:not(:disabled) { background: var(--gold-light); transform: translateY(-1px); }
+    .generate-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+    .spinner {
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .loading .spinner { display: block; }
+    .loading .btn-text { opacity: 0.75; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 결과 영역 ── */
+    .result-section { display: none; }
+    .result-section.visible { display: block; }
+
+    /* ── 플랫폼 바 ── */
+    .platform-bar { padding: 20px 28px; }
+    .platform-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .platform-btn {
+      padding: 8px 18px;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .platform-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(28,74,59,0.04); }
+    .platform-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+    .platform-btn .pdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .platform-btn .cached-mark {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-left: 2px;
+    }
+
+    /* ── 결과 카드 ── */
+    .result-card { overflow: hidden; padding: 0; }
+    .result-header {
+      display: flex;
+      align-items: center;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      background: rgba(247,244,239,0.5);
+    }
+    .platform-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      letter-spacing: 0.05em;
+    }
+    .result-status { font-size: 12px; color: var(--text-muted); }
+    .result-actions { margin-left: auto; display: flex; gap: 8px; }
+    .action-btn {
+      padding: 6px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .result-body { padding: 32px; min-height: 180px; }
+
+    /* ── 스트리밍 커서 ── */
+    .stream-cursor::after {
+      content: "▋";
+      animation: blink 0.85s step-end infinite;
+      color: var(--gold);
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── 마크다운 ── */
+    .md h1, .md h2 {
+      font-size: 19px; font-weight: 700;
+      margin: 2em 0 0.75em;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 8px;
+    }
+    .md h1:first-child, .md h2:first-child { margin-top: 0; }
+    .md h3 { font-size: 15px; font-weight: 600; margin: 1.6em 0 0.5em; }
+    .md p { margin: 0.85em 0; line-height: 1.8; font-size: 15px; }
+    .md strong { color: var(--accent); font-weight: 600; }
+    .md blockquote {
+      border-left: 4px solid var(--gold);
+      margin: 1.4em 0;
+      padding: 12px 20px;
+      background: rgba(200,136,42,0.06);
+      border-radius: 0 8px 8px 0;
+      font-style: italic;
+      color: #444;
+      font-size: 14px;
+    }
+    .md table { width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: 13px; }
+    .md th { background: var(--accent); color: #fff; padding: 9px 15px; text-align: left; font-weight: 500; }
+    .md td { padding: 9px 15px; border-bottom: 1px solid var(--border); }
+    .md tr:nth-child(even) td { background: rgba(247,244,239,0.5); }
+    .md ul, .md ol { padding-left: 1.4em; margin: 0.7em 0; }
+    .md li { margin: 0.35em 0; font-size: 15px; line-height: 1.75; }
+    .md code {
+      font-family: var(--mono); font-size: 12px;
+      background: rgba(28,74,59,0.08);
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .md hr { border: none; border-top: 2px solid var(--border); margin: 2em 0; }
+
+    /* ── 에러 ── */
+    .error-box {
+      padding: 16px 20px;
+      background: #fef2f2;
+      border-left: 4px solid #ef4444;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px; color: #dc2626; line-height: 1.6;
+    }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px;
+      padding: 11px 20px;
+      background: var(--accent); color: #fff;
+      border-radius: 8px; font-size: 13px;
+      opacity: 0; transform: translateY(6px);
+      transition: all 0.2s; pointer-events: none; z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── 반응형 ── */
+    @media (max-width: 640px) {
+      header { padding: 14px 18px; flex-wrap: wrap; gap: 10px; }
+      .container { padding: 20px 14px 50px; }
+      .card { padding: 18px; }
+      .url-row { flex-direction: column; }
+      .options-row { flex-direction: column; align-items: flex-start; }
+      .generate-btn { margin-left: 0; width: 100%; justify-content: center; }
+      .result-body { padding: 18px; }
+      .key-banner { padding: 12px 18px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─────────── 헤더 ─────────── -->
+<header>
+  <div class="logo-group">
+    <div class="logo-sub">GEO / AEO Writer</div>
+    <h1>AI 최적화 아티클 생성기</h1>
+  </div>
+  <span class="header-badge">Princeton KDD 2024 기반</span>
+  <button class="settings-btn" onclick="toggleKeyBanner()">⚙ API 키</button>
+</header>
+
+<!-- ─────────── API 키 배너 ─────────── -->
+<div class="key-banner" id="key-banner">
+  <span class="key-status" id="key-status">🔑 Anthropic API 키를 입력하세요 — 브라우저 로컬에만 저장됩니다.</span>
+  <input type="password" id="key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
+  <button class="key-save-btn" onclick="saveKey()">저장</button>
+</div>
+
+<!-- ─────────── 메인 ─────────── -->
+<div class="container">
+
+  <!-- 01 입력 카드 -->
+  <div class="card">
+    <div class="card-label">01 — 원본 콘텐츠 입력</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('text')">텍스트 입력</button>
+      <button class="tab" onclick="switchTab('url')">URL</button>
+    </div>
+
+    <!-- 텍스트 탭 -->
+    <div class="tab-panel active" id="tab-text">
+      <textarea id="text-input" placeholder="글로 쓸 내용을 자유롭게 붙여넣으세요.
+인터뷰 원문, 강의 스크립트, 아이디어 메모, 블로그 초안 등 어떤 형식도 OK."></textarea>
+    </div>
+
+    <!-- URL 탭 -->
+    <div class="tab-panel" id="tab-url">
+      <div class="url-row">
+        <input type="text" id="url-input" placeholder="https://example.com/article" />
+        <button class="fetch-btn" id="fetch-btn" onclick="fetchUrl()">본문 가져오기</button>
+      </div>
+      <p class="url-note">
+        <span>💡</span>
+        <span>CORS 제한으로 일부 사이트는 직접 가져오기가 안 될 수 있습니다. 실패 시 해당 페이지를 직접 열어 텍스트를 복사해 "텍스트 입력" 탭에 붙여넣으세요.</span>
+      </p>
+      <div class="url-preview" id="url-preview"></div>
+    </div>
+
+    <div class="options-row">
+      <span class="first-gen-note">첫 생성: <strong>AEO/GEO 완전 최적화 원문</strong></span>
+      <button class="generate-btn" id="gen-btn" onclick="generate()">
+        <div class="spinner"></div>
+        <span class="btn-text">✦ 아티클 생성</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 02 결과 영역 -->
+  <div class="result-section" id="result-section">
+
+    <!-- 플랫폼 전환 바 -->
+    <div class="card platform-bar">
+      <div class="card-label">02 — 플랫폼 베리에이션</div>
+      <div class="platform-btns">
+        <button class="platform-btn active" id="pbtn-aeo_geo" onclick="setPlatform('aeo_geo')">
+          <span class="pdot"></span> AEO/GEO 최적화
+        </button>
+        <button class="platform-btn" id="pbtn-brunch" onclick="setPlatform('brunch')">
+          <span class="pdot"></span> 브런치 스토리
+        </button>
+        <button class="platform-btn" id="pbtn-blog" onclick="setPlatform('blog')">
+          <span class="pdot"></span> 네이버 블로그
+        </button>
+        <button class="platform-btn" id="pbtn-article" onclick="setPlatform('article')">
+          <span class="pdot"></span> 아티클 (GEO 극대화)
+        </button>
+        <button class="platform-btn" id="pbtn-newsletter" onclick="setPlatform('newsletter')">
+          <span class="pdot"></span> 뉴스레터
+        </button>
+      </div>
+    </div>
+
+    <!-- 결과 카드 -->
+    <div class="card result-card">
+      <div class="result-header">
+        <span class="platform-tag" id="platform-tag">AEO/GEO</span>
+        <span class="result-status" id="result-status">생성 중...</span>
+        <div class="result-actions">
+          <button class="action-btn" onclick="copyResult()">복사</button>
+          <button class="action-btn" onclick="downloadResult()">다운로드 .md</button>
+        </div>
+      </div>
+      <div class="result-body">
+        <div class="md" id="result-output"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   상태
+═══════════════════════════════════════════════ */
+const KEY_STORAGE = 'geo_aeo_anthropic_key';
+let currentTab = 'text';
+let currentPlatform = 'aeo_geo';
+let sourceContent = '';
+let sourceInputType = 'text';
+let results = {};
+let isGenerating = false;
+
+const PLATFORM_LABELS = {
+  aeo_geo:    'AEO/GEO',
+  brunch:     '브런치',
+  blog:       '네이버 블로그',
+  article:    '아티클',
+  newsletter: '뉴스레터'
+};
+
+/* ═══════════════════════════════════════════════
+   API 키 관리
+═══════════════════════════════════════════════ */
+function getKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
+
+function saveKey() {
+  const val = document.getElementById('key-input').value.trim();
+  if (!val.startsWith('sk-')) return showToast('올바른 API 키 형식이 아닙니다.');
+  localStorage.setItem(KEY_STORAGE, val);
+  updateKeyStatus();
+  showToast('API 키 저장됨 ✓');
+  document.getElementById('key-input').value = '';
+}
+
+function updateKeyStatus() {
+  const key = getKey();
+  const statusEl = document.getElementById('key-status');
+  const bannerEl = document.getElementById('key-banner');
+  if (key) {
+    statusEl.textContent = '✓ API 키 설정됨 (sk-ant-...'+key.slice(-4)+')';
+    statusEl.style.color = '#065f46';
+    bannerEl.style.background = '#f0fdf4';
+    bannerEl.style.borderBottomColor = '#86efac';
+  } else {
+    statusEl.textContent = '🔑 Anthropic API 키를 입력하세요 — 브라우저 로컬에만 저장됩니다.';
+    statusEl.style.color = '#92400e';
+  }
+}
+
+function toggleKeyBanner() {
+  const el = document.getElementById('key-banner');
+  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+
+document.getElementById('key-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveKey();
+});
+
+/* ═══════════════════════════════════════════════
+   탭 전환
+═══════════════════════════════════════════════ */
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['text','url'][i] === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+/* ═══════════════════════════════════════════════
+   URL 본문 가져오기 (CORS 프록시)
+═══════════════════════════════════════════════ */
+async function fetchUrl() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return showToast('URL을 입력해주세요.');
+
+  const btn = document.getElementById('fetch-btn');
+  btn.textContent = '가져오는 중...';
+  btn.disabled = true;
+
+  try {
+    // CORS 프록시 경유
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    const html = await res.text();
+
+    // DOMParser로 본문 추출
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    ['script','style','nav','header','footer','iframe','.ad'].forEach(sel => {
+      doc.querySelectorAll(sel).forEach(el => el.remove());
+    });
+
+    const title = doc.title || doc.querySelector('h1')?.textContent || '';
+    let body = '';
+    for (const sel of ['article','main','.content','.post-body','#content','body']) {
+      const el = doc.querySelector(sel);
+      if (el && el.textContent.trim().length > 200) {
+        body = el.textContent.trim().replace(/\s+/g,' ').slice(0, 8000);
+        break;
+      }
+    }
+
+    const preview = document.getElementById('url-preview');
+    preview.style.display = 'block';
+    preview.innerHTML = '<strong>' + escHtml(title) + '</strong><br>' + escHtml(body.slice(0,200)) + '...';
+
+    sourceContent = '제목: ' + title + '\n\n' + body;
+    sourceInputType = 'url';
+    showToast('본문을 가져왔습니다 ✓');
+  } catch(err) {
+    showToast('가져오기 실패: ' + err.message + ' — 텍스트 탭에 직접 붙여넣어 주세요.');
+  } finally {
+    btn.textContent = '본문 가져오기';
+    btn.disabled = false;
+  }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ═══════════════════════════════════════════════
+   플랫폼별 시스템 프롬프트
+═══════════════════════════════════════════════ */
+const BASE_PROMPT = `당신은 AEO(Answer Engine Optimization)와 GEO(Generative Engine Optimization) 전문 작가입니다.
+Princeton KDD 2024 연구 기반으로 AI 답변 엔진의 인용률을 극대화하는 글을 씁니다.
+
+핵심 AEO/GEO 원칙:
+- BLUF: 첫 40-60자에 핵심 답변 배치 (AI Overview 인용률 +67%)
+- H2 헤딩: 의문문 형식 ("~란 무엇인가?", "~는 어떻게 하는가?") — AI 인용 2.8배
+- 신뢰 신호: 통계+출처 (+41%), 외부 인용 (+40%), 전문가 직접 인용 (+35%)
+- FAQPage 구조: AI Overview 노출 3.2배
+- 설득적 언어 금지: "놀랍도록", "완벽한", "최고의" 등 → AI 신뢰도 하락
+- 구체적 수치와 출처 명시
+- 마크다운 형식으로 작성 (## H2, ### H3, > 인용, 표)`;
+
+const SYSTEM_PROMPTS = {
+  aeo_geo: BASE_PROMPT + `
+
+[AEO/GEO 완전 최적화 지침]
+- 길이: 3000자 이상
+- 구조: **TL;DR 박스** (3줄 핵심 요약) → 의문문 H2 섹션 5개 이상 → 비교 표 → 전문가 인용 블록 → FAQ 5개 이상
+- 첫 문단: 독자 질문에 직접 답변 (BLUF)
+- 각 H2: 반드시 의문문 형식
+- 통계/수치: 출처 반드시 명시 (예: [Princeton KDD 2024])
+- 비교 정보: 마크다운 테이블 필수
+- FAQ 섹션: "자주 묻는 질문" 소제목 후 Q: / A: 형식 5개 이상
+- 마무리: 핵심 통찰 1문장 + 독자 행동 유도`,
+
+  brunch: BASE_PROMPT + `
+
+[브런치 스토리 지침]
+- 길이: 2500-3500자
+- 톤: 지식인 에세이체 — 문학적이되 정보 밀도 유지
+- 구조: 구체적 장면/에피소드로 시작 → 통찰 전개 → 보편적 결론
+- 인용 블록: 3개 이상 (> 형식)
+- 소제목: 통찰을 담은 선언문형 OK (의문문 불필요)
+- 표 없음 — 서사 흐름 유지
+- 마무리: 독자에게 직접 말 거는 1문장
+- 감정적 연결고리 반드시 포함`,
+
+  blog: BASE_PROMPT + `
+
+[네이버 블로그 지침]
+- 길이: 2000-3000자
+- 첫 문단: 핵심 검색 키워드 3개 이상 자연스럽게 포함
+- 소제목: 실용 정보 중심, 볼드 강조
+- 단락: 3-4문장으로 짧게 (모바일 가독성)
+- 비교 표 1개 이상 필수
+- 핵심 정보: 번호 목록 또는 불릿 활용
+- 마무리: 독자 질문 유도
+- 끝에 해시태그 10개 (#키워드 형식)`,
+
+  article: BASE_PROMPT + `
+
+[아티클 — GEO 극대화 지침]
+- 길이: 3500자 이상
+- 구조: 요약(TL;DR) → 배경 → 핵심 주장 5개(각 의문문 H2) → 데이터 표 → 반론/한계 → 결론 → 참고자료 → FAQ 6개 이상
+- 각 섹션: 200-400자 (AI가 독립적으로 인용 가능한 단위)
+- 모든 주장: 수치 또는 출처로 뒷받침
+- 반론 섹션 필수: "이 관점의 한계는?"
+- 참고자료: 5개 이상 ([저자, 연도] 제목, 출처)
+- FAQ: Q/A 형식 6개, 각 답변 100자 이내
+- 학술/전문 매체 수준의 객관적 어조`,
+
+  newsletter: BASE_PROMPT + `
+
+[뉴스레터 지침]
+- 길이: 800-1200자
+- 시작: 독자에게 직접 말 걸기
+- 구조: 개인 오프너(2-3줄) → 핵심 인사이트 불릿 3개 → 실행 팁 1개 → CTA 1개
+- 불릿: 3개로 제한, 각 1줄
+- 어조: 친근하고 직접적 — 전문가가 친구에게 쓰는 편지
+- 표/긴 인용 없음
+- CTA: "이번 주에 해볼 것:" 또는 "더 알고 싶다면:" 형식`
+};
+
+/* ═══════════════════════════════════════════════
+   아티클 생성 (Anthropic API 직접 스트리밍)
+═══════════════════════════════════════════════ */
+async function generate() {
+  if (isGenerating) return;
+
+  const apiKey = getKey();
+  if (!apiKey) {
+    document.getElementById('key-banner').style.display = 'flex';
+    return showToast('API 키를 먼저 입력해주세요.');
+  }
+
+  // 소스 콘텐츠 수집
+  let content = '';
+  let inputType = 'text';
+
+  if (currentTab === 'text') {
+    content = document.getElementById('text-input').value.trim();
+    if (!content) return showToast('텍스트를 입력해주세요.');
+  } else {
+    if (!sourceContent) return showToast('먼저 URL 본문을 가져와주세요.');
+    content = sourceContent;
+    inputType = sourceInputType;
+  }
+
+  // 초기화 — 첫 생성은 항상 aeo_geo
+  currentPlatform = 'aeo_geo';
+  sourceContent = content;
+  sourceInputType = inputType;
+  results = {};
+  updatePlatformBtns();
+
+  await streamGenerate('aeo_geo', content, inputType, apiKey);
+}
+
+async function setPlatform(platform) {
+  if (isGenerating || platform === currentPlatform) return;
+  currentPlatform = platform;
+  updatePlatformBtns();
+
+  if (results[platform]) {
+    renderResult(platform, results[platform], '완료 (캐시)');
+    return;
+  }
+  if (!sourceContent) return showToast('먼저 원문을 생성해주세요.');
+
+  const apiKey = getKey();
+  if (!apiKey) return showToast('API 키를 먼저 설정해주세요.');
+
+  await streamGenerate(platform, sourceContent, sourceInputType, apiKey);
+}
+
+function updatePlatformBtns() {
+  Object.keys(PLATFORM_LABELS).forEach(p => {
+    const btn = document.getElementById('pbtn-'+p);
+    btn.classList.toggle('active', p === currentPlatform);
+    // 캐시 표시
+    const mark = btn.querySelector('.cached-mark');
+    if (results[p] && p !== currentPlatform) {
+      if (!mark) {
+        const s = document.createElement('span');
+        s.className = 'cached-mark';
+        s.textContent = '✓';
+        btn.appendChild(s);
+      }
+    } else if (mark) {
+      mark.remove();
+    }
+  });
+}
+
+async function streamGenerate(platform, content, inputType, apiKey) {
+  isGenerating = true;
+  const genBtn = document.getElementById('gen-btn');
+  genBtn.disabled = true;
+  genBtn.classList.add('loading');
+
+  // 결과 섹션 표시
+  const resultSection = document.getElementById('result-section');
+  resultSection.classList.add('visible');
+  document.getElementById('platform-tag').textContent = PLATFORM_LABELS[platform];
+  document.getElementById('result-status').textContent = '생성 중...';
+
+  const outputEl = document.getElementById('result-output');
+  outputEl.innerHTML = '<span class="stream-cursor"></span>';
+  outputEl.className = 'md';
+
+  let fullText = '';
+  let inTextBlock = false;
+
+  const userMsg = `다음 내용을 바탕으로 AEO/GEO 최적화 아티클을 작성하세요.
+
+[입력 유형: ${inputType === 'url' ? 'URL에서 추출한 본문' : '직접 입력한 텍스트'}]
+
+[원본 내용]
+${content}
+
+마크다운 형식으로 작성하세요. 제목은 ## 으로, 소제목은 ### 으로 표시하세요.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-7',
+        max_tokens: 4096,
+        thinking: { type: 'adaptive' },
+        stream: true,
+        system: SYSTEM_PROMPTS[platform],
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err.error?.message) || `HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          // 이벤트 타입 추적 (선택적)
+        } else if (line.startsWith('data: ')) {
+          let data;
+          try { data = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (data.type === 'content_block_start') {
+            inTextBlock = data.content_block?.type === 'text';
+          } else if (data.type === 'content_block_stop') {
+            inTextBlock = false;
+          } else if (data.type === 'content_block_delta' && inTextBlock) {
+            if (data.delta?.type === 'text_delta') {
+              fullText += data.delta.text;
+              outputEl.innerHTML = marked.parse(fullText) + '<span class="stream-cursor"></span>';
+              // 스크롤 따라가기
+              outputEl.lastElementChild?.scrollIntoView({ block: 'nearest' });
+            }
+          } else if (data.type === 'message_stop') {
+            outputEl.innerHTML = marked.parse(fullText);
+            results[platform] = fullText;
+            document.getElementById('result-status').textContent = '완료';
+            updatePlatformBtns();
+          } else if (data.type === 'error') {
+            throw new Error(data.error?.message || '알 수 없는 오류');
+          }
+        }
+      }
+    }
+
+    // 혹시 message_stop 이벤트 없이 끝난 경우
+    if (fullText && !results[platform]) {
+      outputEl.innerHTML = marked.parse(fullText);
+      results[platform] = fullText;
+      document.getElementById('result-status').textContent = '완료';
+      updatePlatformBtns();
+    }
+
+  } catch (err) {
+    outputEl.innerHTML = '<div class="error-box">⚠ 생성 실패: ' + escHtml(err.message) + '<br><br>API 키를 확인하거나, 잠시 후 다시 시도해주세요.</div>';
+    document.getElementById('result-status').textContent = '오류';
+  } finally {
+    isGenerating = false;
+    genBtn.disabled = false;
+    genBtn.classList.remove('loading');
+  }
+}
+
+function renderResult(platform, text, statusText) {
+  document.getElementById('platform-tag').textContent = PLATFORM_LABELS[platform];
+  document.getElementById('result-status').textContent = statusText || '완료';
+  document.getElementById('result-output').innerHTML = marked.parse(text);
+}
+
+/* ═══════════════════════════════════════════════
+   복사 / 다운로드
+═══════════════════════════════════════════════ */
+async function copyResult() {
+  const text = results[currentPlatform];
+  if (!text) return showToast('생성된 내용이 없습니다.');
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('클립보드에 복사했습니다 ✓');
+  } catch {
+    showToast('복사 실패 — 수동으로 선택 후 복사해주세요.');
+  }
+}
+
+function downloadResult() {
+  const text = results[currentPlatform];
+  if (!text) return showToast('생성된 내용이 없습니다.');
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = PLATFORM_LABELS[currentPlatform].replace(/\//g,'-') + '_' + Date.now() + '.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ═══════════════════════════════════════════════
+   토스트
+═══════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* ═══════════════════════════════════════════════
+   초기화
+═══════════════════════════════════════════════ */
+updateKeyStatus();
+
+// API 키가 있으면 배너 숨기기
+if (getKey()) {
+  document.getElementById('key-banner').style.display = 'none';
+}
+
+// URL 입력 엔터키
+document.getElementById('url-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fetchUrl();
+});
+</script>
+</body>
+</html>

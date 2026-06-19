@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GEO/AEO Writer</title>
+
+  <!-- Pretendard Variable -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <!-- Space Mono for labels -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <!-- Soup Of Justice via CDNFonts -->
+  <link href="https://fonts.cdnfonts.com/css/soup-of-justice" rel="stylesheet" />
+  <!-- marked.js -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /* ═══════════════════════════════════
+       DESIGN TOKENS — Disruptor × #21532D
+    ═══════════════════════════════════ */
+    :root {
+      --bg:         #FFFFFF;
+      --accent:     #21532D;
+      --accent-fg:  #FFFFFF;
+      --sub:        #FFF9DF;
+      --text:       #1E1E1E;
+      --muted:      #6B7280;
+      --border:     3px solid #1E1E1E;
+      --border-acc: 3px solid #21532D;
+      --shadow:     6px 6px 0 #21532D;
+      --shadow-dk:  6px 6px 0 #1E1E1E;
+      --shadow-sub: 6px 6px 0 #FFF9DF;
+      --f-title:    'Soup Of Justice', 'Impact', 'Arial Black', sans-serif;
+      --f-body:     'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      --f-mono:     'Space Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--f-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Staggered reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      animation: fadeUp 0.45s cubic-bezier(.22,.68,0,1.2) forwards;
+    }
+    .r1 { animation-delay: 0.05s; }
+    .r2 { animation-delay: 0.15s; }
+    .r3 { animation-delay: 0.25s; }
+    .r4 { animation-delay: 0.35s; }
+    .r5 { animation-delay: 0.45s; }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════
+       HEADER
+    ═══════════════════════════════════ */
+    header {
+      background: var(--accent);
+      border-bottom: 4px solid #1E1E1E;
+      padding: 24px 40px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 배경 워터마크 */
+    header::before {
+      content: 'GEO';
+      position: absolute;
+      right: -20px;
+      top: -20px;
+      font-family: var(--f-title);
+      font-size: 220px;
+      color: rgba(255,255,255,0.04);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-block { flex: 1; }
+
+    .logo-title {
+      font-family: var(--f-title);
+      font-size: clamp(42px, 7vw, 80px);
+      color: #FFFFFF;
+      line-height: 0.88;
+      letter-spacing: 0.02em;
+    }
+
+    .logo-sub {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    .header-sticker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: var(--sub);
+      border: 2px solid #1E1E1E;
+      box-shadow: 3px 3px 0 #1E1E1E;
+      transform: rotate(-1.5deg);
+      font-family: var(--f-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: #1E1E1E;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      margin-bottom: 4px;
+    }
+
+    .header-api-btn {
+      padding: 9px 18px;
+      background: transparent;
+      border: 2px solid rgba(255,255,255,0.5);
+      color: #fff;
+      font-family: var(--f-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+      margin-bottom: 2px;
+    }
+    .header-api-btn:hover { background: rgba(255,255,255,0.12); border-color: #fff; }
+
+    /* ═══════════════════════════════════
+       API KEY BANNER
+    ═══════════════════════════════════ */
+    .key-banner {
+      background: var(--sub);
+      border-bottom: 3px solid #1E1E1E;
+      padding: 12px 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .key-status {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      color: #1E1E1E;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .key-banner input[type="password"] {
+      flex: 1;
+      max-width: 380px;
+      padding: 8px 12px;
+      border: 2px solid #1E1E1E;
+      background: #fff;
+      font-family: var(--f-mono);
+      font-size: 12px;
+      color: #1E1E1E;
+      outline: none;
+      transition: box-shadow 0.1s;
+    }
+    .key-banner input[type="password"]:focus {
+      box-shadow: 3px 3px 0 #21532D;
+    }
+    .key-save-btn {
+      padding: 8px 18px;
+      background: var(--accent);
+      color: #fff;
+      border: 2px solid #1E1E1E;
+      box-shadow: 3px 3px 0 #1E1E1E;
+      font-family: var(--f-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .key-save-btn:hover { transform: translate(3px, 3px); box-shadow: 0 0 0 #1E1E1E; }
+
+    /* ═══════════════════════════════════
+       CONTAINER
+    ═══════════════════════════════════ */
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+    }
+
+    /* ═══════════════════════════════════
+       SECTION LABEL
+    ═══════════════════════════════════ */
+    .section-label {
+      font-family: var(--f-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #E5E5E5;
+    }
+
+    /* ═══════════════════════════════════
+       CARD (Neo-Brutalist)
+    ═══════════════════════════════════ */
+    .card {
+      background: #fff;
+      border: 3px solid #1E1E1E;
+      box-shadow: var(--shadow-dk);
+      padding: 28px 30px;
+      margin-bottom: 28px;
+      position: relative;
+    }
+
+    /* ═══════════════════════════════════
+       TABS (Brutalist underline style)
+    ═══════════════════════════════════ */
+    .tabs {
+      display: flex;
+      border-bottom: 3px solid #1E1E1E;
+      margin-bottom: 22px;
+      gap: 0;
+    }
+    .tab {
+      padding: 9px 22px;
+      border: none;
+      border-right: 2px solid #1E1E1E;
+      background: transparent;
+      font-family: var(--f-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      position: relative;
+      bottom: -3px;
+    }
+    .tab:last-child { border-right: none; }
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: #1E1E1E;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ═══════════════════════════════════
+       INPUTS
+    ═══════════════════════════════════ */
+    .url-row { display: flex; gap: 0; }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #1E1E1E;
+      background: #fff;
+      font-family: var(--f-body);
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: box-shadow 0.1s;
+      border-radius: 0;
+      -webkit-appearance: none;
+    }
+    input[type="text"]:focus, textarea:focus {
+      box-shadow: 4px 4px 0 var(--accent);
+    }
+    textarea { resize: vertical; min-height: 180px; line-height: 1.65; }
+
+    .fetch-btn {
+      padding: 12px 22px;
+      background: var(--accent);
+      color: #fff;
+      border: 2px solid #1E1E1E;
+      border-left: none;
+      font-family: var(--f-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.12s;
+      flex-shrink: 0;
+    }
+    .fetch-btn:hover:not(:disabled) { background: #1a3f22; }
+    .fetch-btn:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+    .url-note {
+      margin-top: 10px;
+      font-family: var(--f-mono);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      letter-spacing: 0.02em;
+    }
+    .url-preview {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: var(--sub);
+      border-left: 4px solid var(--accent);
+      font-size: 13px;
+      color: var(--muted);
+      display: none;
+      line-height: 1.5;
+    }
+
+    /* ═══════════════════════════════════
+       OPTIONS ROW & GENERATE BUTTON
+    ═══════════════════════════════════ */
+    .options-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+    .first-gen-note {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .first-gen-note strong {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ── THE GENERATE BUTTON ── */
+    .generate-btn {
+      margin-left: auto;
+      padding: 14px 36px;
+      background: var(--accent);
+      color: #fff;
+      border: 3px solid #1E1E1E;
+      box-shadow: var(--shadow-dk);
+      font-family: var(--f-title);
+      font-size: 22px;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.1s, box-shadow 0.1s;
+      position: relative;
+    }
+    .generate-btn:hover:not(:disabled) {
+      transform: translate(6px, 6px);
+      box-shadow: 0 0 0 #1E1E1E;
+    }
+    .generate-btn:disabled {
+      background: #9CA3AF;
+      border-color: #9CA3AF;
+      box-shadow: 3px 3px 0 #D1D5DB;
+      cursor: not-allowed;
+    }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .loading .spinner { display: block; }
+    .loading .btn-text { opacity: 0.75; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ═══════════════════════════════════
+       RESULT SECTION
+    ═══════════════════════════════════ */
+    .result-section { display: none; }
+    .result-section.visible { display: block; }
+
+    /* ── Platform Bar ── */
+    .platform-bar {
+      background: var(--sub);
+      border-color: var(--accent);
+      box-shadow: var(--shadow);
+    }
+    .platform-btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .platform-btn {
+      padding: 7px 18px;
+      border: 2px solid #1E1E1E;
+      background: #fff;
+      cursor: pointer;
+      font-family: var(--f-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: transform 0.1s, box-shadow 0.1s, background 0.1s, color 0.1s;
+      box-shadow: 3px 3px 0 #1E1E1E;
+    }
+    .platform-btn:hover {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 #1E1E1E;
+    }
+    .platform-btn.active {
+      background: var(--accent);
+      border-color: #1E1E1E;
+      color: #fff;
+    }
+    .platform-btn .pdot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .platform-btn .cached-mark { font-size: 10px; opacity: 0.7; }
+
+    /* ── Result Card ── */
+    .result-card {
+      overflow: hidden;
+      padding: 0;
+      border-color: #1E1E1E;
+      box-shadow: 8px 8px 0 #1E1E1E;
+    }
+    .result-header {
+      display: flex;
+      align-items: center;
+      padding: 12px 22px;
+      border-bottom: 3px solid #1E1E1E;
+      gap: 10px;
+      background: var(--sub);
+      flex-wrap: wrap;
+    }
+    .platform-tag {
+      font-family: var(--f-mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      background: var(--accent);
+      color: #fff;
+      border: 2px solid #1E1E1E;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .result-status {
+      font-family: var(--f-mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .result-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Action buttons */
+    .action-btn {
+      padding: 6px 14px;
+      border: 2px solid #1E1E1E;
+      background: #fff;
+      cursor: pointer;
+      font-family: var(--f-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+      box-shadow: 2px 2px 0 #1E1E1E;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .action-btn:hover { transform: translate(2px, 2px); box-shadow: 0 0 0 #1E1E1E; }
+
+    /* Humanize button */
+    .humanize-btn {
+      padding: 6px 16px;
+      border: 2px solid var(--accent);
+      background: var(--sub);
+      cursor: pointer;
+      font-family: var(--f-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      box-shadow: 2px 2px 0 var(--accent);
+      transition: transform 0.1s, box-shadow 0.1s, background 0.1s, color 0.1s;
+      display: none;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .humanize-btn.show { display: flex; }
+    .humanize-btn:hover:not(:disabled) { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--accent); }
+    .humanize-btn.done { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .humanize-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* View toggle */
+    .view-toggle {
+      display: none;
+      border: 2px solid #1E1E1E;
+      font-family: var(--f-mono);
+      font-size: 10px;
+      overflow: hidden;
+    }
+    .view-toggle.show { display: flex; }
+    .vtab {
+      padding: 5px 14px;
+      background: transparent;
+      border: none;
+      border-right: 2px solid #1E1E1E;
+      cursor: pointer;
+      font-family: var(--f-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: all 0.12s;
+    }
+    .vtab:last-child { border-right: none; }
+    .vtab.active { background: var(--accent); color: #fff; }
+
+    /* Grade badge */
+    .grade-badge {
+      font-family: var(--f-mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: none;
+      border: 2px solid #1E1E1E;
+    }
+    .grade-badge.show { display: inline-block; }
+    .grade-a { background: var(--sub); color: var(--accent); }
+    .grade-b { background: #FEF9C3; color: #713F12; }
+    .grade-c { background: #FEE2E2; color: #991B1B; }
+
+    .result-body { padding: 32px; min-height: 200px; }
+
+    /* ── 추가 수정 카드 ── */
+    .custom-edit-card { display: none; }
+    .custom-edit-card.visible { display: block; }
+    .custom-edit-desc {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    .custom-edit-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .custom-edit-hint {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--f-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .custom-apply-btn {
+      padding: 10px 24px;
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: var(--border);
+      cursor: pointer;
+      font-family: var(--f-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      box-shadow: var(--shadow-dk);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .custom-apply-btn:hover:not(:disabled) {
+      transform: translate(6px, 6px);
+      box-shadow: 0 0 0 #1E1E1E;
+    }
+    .custom-apply-btn:disabled { background: #ccc; border-color: #ccc; box-shadow: none; cursor: not-allowed; }
+
+    /* ── Stream cursor ── */
+    .stream-cursor::after {
+      content: '▋';
+      animation: blink 0.85s step-end infinite;
+      color: var(--accent);
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ═══════════════════════════════════
+       MARKDOWN RENDERING
+       타이포 대비: 큰 제목 vs 작은 본문
+    ═══════════════════════════════════ */
+    .md { font-size: 14px; line-height: 1.8; color: var(--text); }
+
+    .md h1, .md h2 {
+      font-family: var(--f-title);
+      font-size: clamp(26px, 3.5vw, 38px);
+      font-weight: 400;
+      line-height: 0.95;
+      color: var(--accent);
+      margin: 2em 0 0.6em;
+      letter-spacing: 0.02em;
+      border-bottom: 3px solid var(--accent);
+      padding-bottom: 8px;
+    }
+    .md h1:first-child, .md h2:first-child { margin-top: 0; }
+
+    .md h3 {
+      font-family: var(--f-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin: 1.6em 0 0.5em;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #E5E5E5;
+    }
+
+    .md p { margin: 0.85em 0; }
+
+    .md strong {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .md blockquote {
+      border-left: 5px solid var(--accent);
+      margin: 1.4em 0;
+      padding: 12px 20px;
+      background: var(--sub);
+      font-style: italic;
+      color: #444;
+      font-size: 13px;
+    }
+
+    .md table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.4em 0;
+      font-size: 12px;
+      font-family: var(--f-body);
+      border: 2px solid #1E1E1E;
+    }
+    .md th {
+      background: var(--accent);
+      color: #fff;
+      padding: 9px 14px;
+      text-align: left;
+      font-weight: 700;
+      font-family: var(--f-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+    }
+    .md td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #E5E5E5;
+      border-right: 1px solid #F0F0F0;
+    }
+    .md tr:nth-child(even) td { background: #FAFAFA; }
+
+    .md ul, .md ol { padding-left: 1.4em; margin: 0.7em 0; }
+    .md li { margin: 0.35em 0; }
+
+    .md code {
+      font-family: var(--f-mono);
+      font-size: 11px;
+      background: var(--sub);
+      border: 1px solid #E5E5E5;
+      padding: 1px 6px;
+    }
+
+    .md hr {
+      border: none;
+      border-top: 3px solid #1E1E1E;
+      margin: 2em 0;
+    }
+
+    /* ═══════════════════════════════════
+       ERROR BOX
+    ═══════════════════════════════════ */
+    .error-box {
+      padding: 16px 20px;
+      background: #FEF2F2;
+      border-left: 4px solid #EF4444;
+      font-family: var(--f-mono);
+      font-size: 12px;
+      color: #DC2626;
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════
+       TOAST
+    ═══════════════════════════════════ */
+    .toast {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      padding: 10px 18px;
+      background: var(--accent);
+      color: #fff;
+      border: 2px solid #1E1E1E;
+      box-shadow: 4px 4px 0 #1E1E1E;
+      font-family: var(--f-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: all 0.18s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ═══════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════ */
+    @media (max-width: 640px) {
+      header { padding: 18px 20px; }
+      .logo-title { font-size: 38px; }
+      .container { padding: 20px 14px 56px; }
+      .card { padding: 18px; }
+      .url-row { flex-direction: column; }
+      .fetch-btn { border-left: 2px solid #1E1E1E; }
+      .options-row { flex-direction: column; align-items: flex-start; }
+      .generate-btn { margin-left: 0; width: 100%; justify-content: center; }
+      .result-body { padding: 18px; }
+      .key-banner { padding: 12px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─────────── HEADER ─────────── -->
+<header>
+  <div class="header-inner">
+    <div class="logo-block">
+      <div class="logo-title">GEO/AEO WRITER</div>
+      <div class="logo-sub">AI Optimized Article Generator</div>
+    </div>
+    <div class="header-sticker">Princeton KDD 2024</div>
+    <button class="header-api-btn" onclick="toggleKeyBanner()">⚙ API KEY</button>
+  </div>
+</header>
+
+<!-- ─────────── API KEY BANNER ─────────── -->
+<div class="key-banner" id="key-banner">
+  <span class="key-status" id="key-status">🔑 ANTHROPIC API KEY 입력 — 로컬에만 저장</span>
+  <input type="password" id="key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
+  <button class="key-save-btn" onclick="saveKey()">SAVE</button>
+</div>
+
+<!-- ─────────── MAIN ─────────── -->
+<div class="container">
+
+  <!-- 01 — INPUT -->
+  <div class="card reveal r1">
+    <div class="section-label">01 — 원본 콘텐츠 입력</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('text')">텍스트 입력</button>
+      <button class="tab" onclick="switchTab('url')">URL</button>
+    </div>
+
+    <!-- 텍스트 탭 -->
+    <div class="tab-panel active" id="tab-text">
+      <textarea id="text-input" placeholder="글로 쓸 내용을 자유롭게 붙여넣으세요.
+인터뷰 원문, 강의 스크립트, 아이디어 메모, 블로그 초안 등 어떤 형식도 OK."></textarea>
+    </div>
+
+    <!-- URL 탭 -->
+    <div class="tab-panel" id="tab-url">
+      <div class="url-row">
+        <input type="text" id="url-input" placeholder="https://example.com/article" />
+        <button class="fetch-btn" id="fetch-btn" onclick="fetchUrl()">FETCH</button>
+      </div>
+      <p class="url-note">
+        <span>↳</span>
+        <span>CORS 제한으로 일부 사이트는 직접 가져오기가 안 될 수 있습니다. 실패 시 텍스트 탭에 직접 붙여넣으세요.</span>
+      </p>
+      <div class="url-preview" id="url-preview"></div>
+    </div>
+
+    <div class="options-row">
+      <span class="first-gen-note">첫 생성: <strong>AEO/GEO 완전 최적화 원문</strong></span>
+      <button class="generate-btn" id="gen-btn" onclick="generate()">
+        <div class="spinner"></div>
+        <span class="btn-text">✦ 아티클 생성</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 02 — RESULT -->
+  <div class="result-section" id="result-section">
+
+    <!-- Platform bar -->
+    <div class="card platform-bar reveal r2">
+      <div class="section-label">02 — 플랫폼 베리에이션</div>
+      <div class="platform-btns">
+        <button class="platform-btn active" id="pbtn-aeo_geo" onclick="setPlatform('aeo_geo')">
+          <span class="pdot"></span> AEO/GEO
+        </button>
+        <button class="platform-btn" id="pbtn-brunch" onclick="setPlatform('brunch')">
+          <span class="pdot"></span> 브런치
+        </button>
+        <button class="platform-btn" id="pbtn-blog" onclick="setPlatform('blog')">
+          <span class="pdot"></span> 네이버 블로그
+        </button>
+        <button class="platform-btn" id="pbtn-article" onclick="setPlatform('article')">
+          <span class="pdot"></span> 아티클
+        </button>
+        <button class="platform-btn" id="pbtn-newsletter" onclick="setPlatform('newsletter')">
+          <span class="pdot"></span> 뉴스레터
+        </button>
+      </div>
+    </div>
+
+    <!-- Result card -->
+    <div class="card result-card reveal r3">
+      <div class="result-header">
+        <span class="platform-tag" id="platform-tag">AEO/GEO</span>
+        <span class="result-status" id="result-status">생성 중...</span>
+        <span class="grade-badge" id="grade-badge"></span>
+        <div class="view-toggle" id="view-toggle">
+          <button class="vtab active" id="vtab-original" onclick="setView('original')">원문</button>
+          <button class="vtab" id="vtab-humanized" onclick="setView('humanized')">윤문</button>
+          <button class="vtab" id="vtab-custom" onclick="setView('custom')" style="display:none">수정본</button>
+        </div>
+        <div class="result-actions">
+          <button class="humanize-btn" id="humanize-btn" onclick="humanize()">✦ 사람 느낌</button>
+          <button class="action-btn" onclick="copyResult()">복사</button>
+          <button class="action-btn" onclick="downloadResult()">.MD</button>
+        </div>
+      </div>
+      <div class="result-body">
+        <div class="md" id="result-output"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 03 — 추가 수정 -->
+  <div class="card custom-edit-card reveal r4" id="custom-edit-card">
+    <div class="section-label">03 — 추가 수정 지시</div>
+    <div class="custom-edit-desc">현재 글에만 적용할 수정 사항을 입력하세요. 나머지 내용은 그대로 유지됩니다.</div>
+    <textarea id="custom-instruction" placeholder="예: 모든 '~했다' 체를 '~했습니다' 체로 변경해주세요.
+예: 제목을 더 임팩트 있게 바꿔주세요.
+예: 마지막 FAQ에 항목 2개를 추가해주세요." style="min-height: 110px; width: 100%; padding: 12px 16px; border: var(--border); font-family: var(--f-body); font-size: 14px; background: var(--sub); color: var(--text); resize: vertical; outline: none;"></textarea>
+    <div class="custom-edit-row">
+      <span class="custom-edit-hint">현재 <span id="custom-base-label">원문</span> 기준으로 수정</span>
+      <button class="custom-apply-btn" id="custom-apply-btn" onclick="customEdit()">수정 적용 →</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   상태
+═══════════════════════════════════════════════ */
+const KEY_STORAGE = 'geo_aeo_anthropic_key';
+let currentTab = 'text';
+let currentPlatform = 'aeo_geo';
+let sourceContent = '';
+let sourceInputType = 'text';
+let results = {};
+let humanizedResults = {};
+let customResults = {};
+let customInstructions = {};
+let currentView = 'original'; // 'original' | 'humanized' | 'custom'
+let isGenerating = false;
+
+const PLATFORM_LABELS = {
+  aeo_geo:    'AEO/GEO',
+  brunch:     '브런치',
+  blog:       '네이버 블로그',
+  article:    '아티클',
+  newsletter: '뉴스레터'
+};
+
+/* ═══════════════════════════════════════════════
+   API 키 관리
+═══════════════════════════════════════════════ */
+function getKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
+
+function saveKey() {
+  const val = document.getElementById('key-input').value.trim();
+  if (!val.startsWith('sk-')) return showToast('올바른 API 키 형식이 아닙니다.');
+  localStorage.setItem(KEY_STORAGE, val);
+  updateKeyStatus();
+  showToast('API 키 저장됨 ✓');
+  document.getElementById('key-input').value = '';
+}
+
+function updateKeyStatus() {
+  const key = getKey();
+  const statusEl = document.getElementById('key-status');
+  const bannerEl = document.getElementById('key-banner');
+  if (key) {
+    statusEl.textContent = '✓ API KEY SET (...' + key.slice(-4) + ')';
+    statusEl.style.color = '#21532D';
+    bannerEl.style.background = '#F0FDF4';
+    bannerEl.style.borderBottomColor = '#21532D';
+  } else {
+    statusEl.textContent = '🔑 ANTHROPIC API KEY 입력 — 로컬에만 저장';
+    statusEl.style.color = '#1E1E1E';
+  }
+}
+
+function toggleKeyBanner() {
+  const el = document.getElementById('key-banner');
+  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+
+document.getElementById('key-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveKey();
+});
+
+/* ═══════════════════════════════════════════════
+   탭 전환
+═══════════════════════════════════════════════ */
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['text','url'][i] === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+/* ═══════════════════════════════════════════════
+   URL 본문 가져오기 (CORS 프록시)
+═══════════════════════════════════════════════ */
+async function fetchUrl() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return showToast('URL을 입력해주세요.');
+  const btn = document.getElementById('fetch-btn');
+  btn.textContent = '...';
+  btn.disabled = true;
+  try {
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    ['script','style','nav','header','footer','iframe','.ad'].forEach(sel => {
+      doc.querySelectorAll(sel).forEach(el => el.remove());
+    });
+    const title = doc.title || doc.querySelector('h1')?.textContent || '';
+    let body = '';
+    for (const sel of ['article','main','.content','.post-body','#content','body']) {
+      const el = doc.querySelector(sel);
+      if (el && el.textContent.trim().length > 200) {
+        body = el.textContent.trim().replace(/\s+/g,' ').slice(0, 8000);
+        break;
+      }
+    }
+    const preview = document.getElementById('url-preview');
+    preview.style.display = 'block';
+    preview.innerHTML = '<strong>' + escHtml(title) + '</strong><br>' + escHtml(body.slice(0,200)) + '...';
+    sourceContent = '제목: ' + title + '\n\n' + body;
+    sourceInputType = 'url';
+    showToast('본문을 가져왔습니다 ✓');
+  } catch(err) {
+    showToast('가져오기 실패: ' + err.message);
+  } finally {
+    btn.textContent = 'FETCH';
+    btn.disabled = false;
+  }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ═══════════════════════════════════════════════
+   플랫폼별 시스템 프롬프트
+═══════════════════════════════════════════════ */
+const BASE_PROMPT = `당신은 AEO(Answer Engine Optimization)와 GEO(Generative Engine Optimization) 전문 작가입니다.
+Princeton KDD 2024 연구 기반으로 AI 답변 엔진의 인용률을 극대화하는 글을 씁니다.
+
+핵심 AEO/GEO 원칙:
+- BLUF: 첫 40-60자에 핵심 답변 배치 (AI Overview 인용률 +67%)
+- H2 헤딩: 의문문 형식 ("~란 무엇인가?", "~는 어떻게 하는가?") — AI 인용 2.8배
+- 신뢰 신호: 통계+출처 (+41%), 외부 인용 (+40%), 전문가 직접 인용 (+35%)
+- FAQPage 구조: AI Overview 노출 3.2배
+- 설득적 언어 금지: "놀랍도록", "완벽한", "최고의" 등 → AI 신뢰도 하락
+- 구체적 수치와 출처 명시
+- 마크다운 형식으로 작성 (## H2, ### H3, > 인용, 표)
+
+이중언어 포맷 (영어 검색 노출 최대화):
+- 본문 한국어 문단(2문장 이상)마다 바로 아래 줄에 영어 번역을 이탤릭으로 추가
+- 형식: *[EN] Natural English translation of the paragraph above.*
+- 번역은 직역이 아닌 자연스러운 영어로 작성 (영어 원어민이 쓴 것처럼)
+- 번역 추가 제외: ##/### 헤딩, 마크다운 표 내부, TL;DR 박스, FAQ Q:/A: 라인, > 인용 블록`;
+
+const SYSTEM_PROMPTS = {
+  aeo_geo: BASE_PROMPT + `
+
+[AEO/GEO 완전 최적화 지침]
+- 길이: 3000자 이상
+- 구조: **TL;DR 박스** (3줄 핵심 요약) → 의문문 H2 섹션 5개 이상 → 비교 표 → 전문가 인용 블록 → FAQ 5개 이상
+- 첫 문단: 독자 질문에 직접 답변 (BLUF)
+- 각 H2: 반드시 의문문 형식
+- 통계/수치: 출처 반드시 명시 (예: [Princeton KDD 2024])
+- 비교 정보: 마크다운 테이블 필수
+- FAQ 섹션: "자주 묻는 질문" 소제목 후 Q: / A: 형식 5개 이상
+- 마무리: 핵심 통찰 1문장 + 독자 행동 유도`,
+
+  brunch: BASE_PROMPT + `
+
+[브런치 스토리 지침]
+- 길이: 2500-3500자
+- 톤: 지식인 에세이체 — 문학적이되 정보 밀도 유지
+- 구조: 구체적 장면/에피소드로 시작 → 통찰 전개 → 보편적 결론
+- 인용 블록: 3개 이상 (> 형식)
+- 소제목: 통찰을 담은 선언문형 OK (의문문 불필요)
+- 표 없음 — 서사 흐름 유지
+- 마무리: 독자에게 직접 말 거는 1문장
+- 감정적 연결고리 반드시 포함`,
+
+  blog: BASE_PROMPT + `
+
+[네이버 블로그 지침]
+- 길이: 2000-3000자
+- 첫 문단: 핵심 검색 키워드 3개 이상 자연스럽게 포함
+- 소제목: 실용 정보 중심, 볼드 강조
+- 단락: 3-4문장으로 짧게 (모바일 가독성)
+- 비교 표 1개 이상 필수
+- 핵심 정보: 번호 목록 또는 불릿 활용
+- 마무리: 독자 질문 유도
+- 끝에 해시태그 10개 (#키워드 형식)`,
+
+  article: BASE_PROMPT + `
+
+[아티클 — GEO 극대화 지침]
+- 길이: 3500자 이상
+- 구조: 요약(TL;DR) → 배경 → 핵심 주장 5개(각 의문문 H2) → 데이터 표 → 반론/한계 → 결론 → 참고자료 → FAQ 6개 이상
+- 각 섹션: 200-400자 (AI가 독립적으로 인용 가능한 단위)
+- 모든 주장: 수치 또는 출처로 뒷받침
+- 반론 섹션 필수: "이 관점의 한계는?"
+- 참고자료: 5개 이상 ([저자, 연도] 제목, 출처)
+- FAQ: Q/A 형식 6개, 각 답변 100자 이내
+- 학술/전문 매체 수준의 객관적 어조`,
+
+  newsletter: BASE_PROMPT + `
+
+[뉴스레터 지침]
+- 길이: 800-1200자
+- 시작: 독자에게 직접 말 걸기
+- 구조: 개인 오프너(2-3줄) → 핵심 인사이트 불릿 3개 → 실행 팁 1개 → CTA 1개
+- 불릿: 3개로 제한, 각 1줄
+- 어조: 친근하고 직접적 — 전문가가 친구에게 쓰는 편지
+- 표/긴 인용 없음
+- CTA: "이번 주에 해볼 것:" 또는 "더 알고 싶다면:" 형식`
+};
+
+/* ═══════════════════════════════════════════════
+   아티클 생성 (Anthropic API 직접 스트리밍)
+═══════════════════════════════════════════════ */
+async function generate() {
+  if (isGenerating) return;
+  const apiKey = getKey();
+  if (!apiKey) {
+    document.getElementById('key-banner').style.display = 'flex';
+    return showToast('API 키를 먼저 입력해주세요.');
+  }
+  let content = '';
+  let inputType = 'text';
+  if (currentTab === 'text') {
+    content = document.getElementById('text-input').value.trim();
+    if (!content) return showToast('텍스트를 입력해주세요.');
+  } else {
+    if (!sourceContent) return showToast('먼저 URL 본문을 가져와주세요.');
+    content = sourceContent;
+    inputType = sourceInputType;
+  }
+  currentPlatform = 'aeo_geo';
+  sourceContent = content;
+  sourceInputType = inputType;
+  results = {};
+  humanizedResults = {};
+  customResults = {};
+  customInstructions = {};
+  currentView = 'original';
+  document.getElementById('custom-edit-card').classList.remove('visible');
+  document.getElementById('custom-instruction').value = '';
+  document.getElementById('view-toggle').classList.remove('show');
+  document.getElementById('vtab-custom').style.display = 'none';
+  updatePlatformBtns();
+  await streamGenerate('aeo_geo', content, inputType, apiKey);
+}
+
+async function setPlatform(platform) {
+  if (isGenerating || platform === currentPlatform) return;
+  currentPlatform = platform;
+  updatePlatformBtns();
+  if (results[platform]) {
+    if (customResults[platform]) {
+      currentView = 'custom';
+    } else if (humanizedResults[platform]) {
+      currentView = 'humanized';
+    } else {
+      currentView = 'original';
+    }
+    const displayText = currentView === 'custom' ? customResults[platform]
+      : currentView === 'humanized' ? humanizedResults[platform]
+      : results[platform];
+    renderResult(platform, displayText, '완료 (캐시)');
+    syncHumanizeUI(platform);
+    return;
+  }
+  if (!sourceContent) return showToast('먼저 원문을 생성해주세요.');
+  const apiKey = getKey();
+  if (!apiKey) return showToast('API 키를 먼저 설정해주세요.');
+  await streamGenerate(platform, sourceContent, sourceInputType, apiKey);
+}
+
+function updatePlatformBtns() {
+  Object.keys(PLATFORM_LABELS).forEach(p => {
+    const btn = document.getElementById('pbtn-'+p);
+    btn.classList.toggle('active', p === currentPlatform);
+    const mark = btn.querySelector('.cached-mark');
+    if (results[p] && p !== currentPlatform) {
+      if (!mark) {
+        const s = document.createElement('span');
+        s.className = 'cached-mark';
+        s.textContent = '✓';
+        btn.appendChild(s);
+      }
+    } else if (mark) {
+      mark.remove();
+    }
+  });
+}
+
+async function streamGenerate(platform, content, inputType, apiKey) {
+  isGenerating = true;
+  const genBtn = document.getElementById('gen-btn');
+  genBtn.disabled = true;
+  genBtn.classList.add('loading');
+  const resultSection = document.getElementById('result-section');
+  resultSection.classList.add('visible');
+  document.getElementById('platform-tag').textContent = PLATFORM_LABELS[platform];
+  document.getElementById('result-status').textContent = 'GENERATING...';
+  const outputEl = document.getElementById('result-output');
+  outputEl.innerHTML = '<span class="stream-cursor"></span>';
+  outputEl.className = 'md';
+  let fullText = '';
+  let inTextBlock = false;
+  const userMsg = `다음 내용을 바탕으로 AEO/GEO 최적화 아티클을 작성하세요.\n\n[입력 유형: ${inputType === 'url' ? 'URL에서 추출한 본문' : '직접 입력한 텍스트'}]\n\n[원본 내용]\n${content}\n\n마크다운 형식으로 작성하세요. 제목은 ## 으로, 소제목은 ### 으로 표시하세요.`;
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-7',
+        max_tokens: 4096,
+        thinking: { type: 'adaptive' },
+        stream: true,
+        system: SYSTEM_PROMPTS[platform],
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err.error?.message) || `HTTP ${response.status}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+        if (data.type === 'content_block_start') {
+          inTextBlock = data.content_block?.type === 'text';
+        } else if (data.type === 'content_block_stop') {
+          inTextBlock = false;
+        } else if (data.type === 'content_block_delta' && inTextBlock) {
+          if (data.delta?.type === 'text_delta') {
+            fullText += data.delta.text;
+            outputEl.innerHTML = marked.parse(fullText) + '<span class="stream-cursor"></span>';
+            outputEl.lastElementChild?.scrollIntoView({ block: 'nearest' });
+          }
+        } else if (data.type === 'message_stop') {
+          outputEl.innerHTML = marked.parse(fullText);
+          results[platform] = fullText;
+          document.getElementById('result-status').textContent = 'DONE';
+          updatePlatformBtns();
+          showHumanizeBtn(platform);
+        } else if (data.type === 'error') {
+          throw new Error(data.error?.message || '알 수 없는 오류');
+        }
+      }
+    }
+    if (fullText && !results[platform]) {
+      outputEl.innerHTML = marked.parse(fullText);
+      results[platform] = fullText;
+      document.getElementById('result-status').textContent = 'DONE';
+      updatePlatformBtns();
+      showHumanizeBtn(platform);
+    }
+  } catch (err) {
+    outputEl.innerHTML = '<div class="error-box">⚠ 생성 실패: ' + escHtml(err.message) + '<br><br>API 키를 확인하거나 잠시 후 다시 시도해주세요.</div>';
+    document.getElementById('result-status').textContent = 'ERROR';
+  } finally {
+    isGenerating = false;
+    genBtn.disabled = false;
+    genBtn.classList.remove('loading');
+  }
+}
+
+function renderResult(platform, text, statusText) {
+  document.getElementById('platform-tag').textContent = PLATFORM_LABELS[platform];
+  document.getElementById('result-status').textContent = statusText || 'DONE';
+  document.getElementById('result-output').innerHTML = marked.parse(text);
+}
+
+/* ═══════════════════════════════════════════════
+   Humanize — AI 티 제거 (quick-rules v2.0 기반)
+═══════════════════════════════════════════════ */
+const HUMANIZE_PROMPT = `당신은 AI가 생성한 한국어 글에서 "AI 티"를 제거하는 윤문 전문가입니다.
+quick-rules v2.0(한국어 번역투·AI 관용구 제거 룰북)에 따라 문체·리듬·표현만 수술적으로 교정합니다.
+
+━━ 절대 보존 (수정 금지) ━━
+• AEO/GEO 구조: TL;DR 박스, 의문문 형식 H2 헤딩, FAQ 섹션, 마크다운 표, 인용 블록(>)
+• 통계·수치·날짜·출처 표기 (예: [Princeton KDD 2024], +67%, 3.2배)
+• 고유명사·제품명·기관명·영어 약어 (AI, SEO, API, GEO, AEO, BLUF 등)
+• 큰따옴표 안 직접 인용
+• 마크다운 구조 (##, ###, |표|, >, - 목록) — 구조 변경 절대 금지
+• 변경률 30% 초과 금지. 목표: 15~25%.
+• 영어 번역 구간 (*[EN] ...* 이탤릭 라인) — 삭제·수정 금지. 한국어 문단을 수정한 경우에만 해당 문단 바로 아래의 *[EN] ...* 라인도 번역 갱신.
+
+━━ S1 패턴 — 반드시 수정 ━━
+A-1  "~에 대해서/에 대해" → 목적격 직결
+A-2  "~를 통해/통하여" 3회+ → "~로", "~해서"로 분산
+A-7  "가지고 있다" → 형용사·동사 환원
+A-8  이중 피동 "~되어진다" → "~된다"
+A-16 "그/그녀/그것/그들" 단락 내 3회+ → 생략 또는 명사구로
+C-5  이모지 남발 → 칼럼·리포트면 제거
+C-10 헤딩 "X: Y" 콜론 부제 반복 → 평서 헤딩으로 (단, FAQ Q: 형식은 유지)
+C-11 연결어미 뒤 쉼표 (-고,/-며, 직후) → 쉼표 제거
+D-1  "결론적으로/따라서/이를 통해/요약하면" 3회+ → 1~2건만 남기고 삭제
+D-2  "시사하는 바가 크다", "주목할 만하다" → 삭제 또는 구체 결론으로
+D-3  "본질적으로", "핵심적으로" → 삭제
+D-4  hype 어휘 3회+: "파격적·압도적·획기적" → 구체 수치·사실로
+D-5  의인화 추상 주어 "기술이 묻는다" → 사람·기관 주어로
+D-6  결말 공식 "~할 때다", "지금이야말로" → 평서로
+H-1  문두 접속사 "또한·따라서·즉·나아가" 5회+ → 대량 제거
+H-3  메타 진입 "이는·이 점에서·이 관점에서" 3회+ → 삭제
+I-1  "~인 것이다/~한 것이다" 결말 → 평서형으로
+
+━━ S2 패턴 — 가능한 수정 ━━
+A-9, A-10, E-2, G-1, G-2, I-4 (번역투·헤징·리듬·권고형 수정)
+
+출력 규칙: 윤문된 마크다운 본문만 출력. 설명·메트릭·요약 없음.`;
+
+function showHumanizeBtn(platform) {
+  syncHumanizeUI(platform);
+  document.getElementById('humanize-btn').classList.add('show');
+}
+
+function syncHumanizeUI(platform) {
+  const btn = document.getElementById('humanize-btn');
+  const toggle = document.getElementById('view-toggle');
+  const gradeBadge = document.getElementById('grade-badge');
+  const customTab = document.getElementById('vtab-custom');
+
+  const hasHumanized = !!humanizedResults[platform];
+  const hasCustom = !!customResults[platform];
+
+  if (hasHumanized) {
+    btn.classList.add('done', 'show');
+    btn.textContent = '✓ 윤문 완료';
+    gradeBadge.classList.add('show');
+  } else if (results[platform]) {
+    btn.classList.remove('done');
+    btn.classList.add('show');
+    btn.textContent = '✦ 사람 느낌';
+    gradeBadge.classList.remove('show');
+    if (currentView === 'humanized') currentView = 'original';
+  }
+
+  if (hasHumanized || hasCustom) {
+    toggle.classList.add('show');
+  } else {
+    toggle.classList.remove('show');
+    if (currentView !== 'original') currentView = 'original';
+  }
+
+  customTab.style.display = hasCustom ? '' : 'none';
+  if (!hasCustom && currentView === 'custom') currentView = 'original';
+
+  document.getElementById('vtab-original').classList.toggle('active', currentView === 'original');
+  document.getElementById('vtab-humanized').classList.toggle('active', currentView === 'humanized');
+  customTab.classList.toggle('active', currentView === 'custom');
+
+  if (results[platform]) {
+    document.getElementById('custom-edit-card').classList.add('visible');
+    document.getElementById('custom-instruction').value = customInstructions[platform] || '';
+    updateCustomBaseLabel();
+  }
+}
+
+function setView(view) {
+  currentView = view;
+  document.getElementById('vtab-original').classList.toggle('active', view === 'original');
+  document.getElementById('vtab-humanized').classList.toggle('active', view === 'humanized');
+  document.getElementById('vtab-custom').classList.toggle('active', view === 'custom');
+  updateCustomBaseLabel();
+  const text = view === 'custom' ? customResults[currentPlatform]
+    : view === 'humanized' ? humanizedResults[currentPlatform]
+    : results[currentPlatform];
+  if (text) document.getElementById('result-output').innerHTML = marked.parse(text);
+}
+
+function updateCustomBaseLabel() {
+  const labels = { original: '원문', humanized: '윤문본', custom: '수정본' };
+  const el = document.getElementById('custom-base-label');
+  if (el) el.textContent = labels[currentView] || '원문';
+}
+
+async function humanize() {
+  if (isGenerating) return;
+  const apiKey = getKey();
+  if (!apiKey) return showToast('API 키를 먼저 설정해주세요.');
+  const originalText = results[currentPlatform];
+  if (!originalText) return showToast('먼저 아티클을 생성해주세요.');
+  isGenerating = true;
+  const btn = document.getElementById('humanize-btn');
+  btn.disabled = true;
+  btn.textContent = '...';
+  document.getElementById('result-status').textContent = 'HUMANIZING...';
+  const outputEl = document.getElementById('result-output');
+  outputEl.innerHTML = '<span class="stream-cursor"></span>';
+  let fullText = '';
+  let inTextBlock = false;
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-7',
+        max_tokens: 4096,
+        thinking: { type: 'adaptive' },
+        stream: true,
+        system: HUMANIZE_PROMPT,
+        messages: [{ role: 'user', content: `다음 글에서 AI 티를 제거해 자연스러운 한국어로 윤문해주세요.\n\n[원문]\n${originalText}` }]
+      })
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+        if (data.type === 'content_block_start') {
+          inTextBlock = data.content_block?.type === 'text';
+        } else if (data.type === 'content_block_stop') {
+          inTextBlock = false;
+        } else if (data.type === 'content_block_delta' && inTextBlock) {
+          if (data.delta?.type === 'text_delta') {
+            fullText += data.delta.text;
+            outputEl.innerHTML = marked.parse(fullText) + '<span class="stream-cursor"></span>';
+          }
+        } else if (data.type === 'message_stop') {
+          outputEl.innerHTML = marked.parse(fullText);
+          humanizedResults[currentPlatform] = fullText;
+          currentView = 'humanized';
+          const changeRate = Math.round(Math.abs(originalText.length - fullText.length) / originalText.length * 100);
+          const grade = changeRate <= 25 ? 'A' : changeRate <= 30 ? 'B' : 'C';
+          const gClass = grade === 'A' ? 'grade-a' : grade === 'B' ? 'grade-b' : 'grade-c';
+          const gradeBadge = document.getElementById('grade-badge');
+          gradeBadge.textContent = `GRADE ${grade} · ~${changeRate}%`;
+          gradeBadge.className = 'grade-badge show ' + gClass;
+          document.getElementById('result-status').textContent = 'HUMANIZED';
+          btn.classList.add('done');
+          btn.textContent = '✓ 윤문 완료';
+          document.getElementById('view-toggle').classList.add('show');
+          document.getElementById('vtab-original').classList.remove('active');
+          document.getElementById('vtab-humanized').classList.add('active');
+        } else if (data.type === 'error') {
+          throw new Error(data.error?.message || '알 수 없는 오류');
+        }
+      }
+    }
+    if (fullText && !humanizedResults[currentPlatform]) {
+      outputEl.innerHTML = marked.parse(fullText);
+      humanizedResults[currentPlatform] = fullText;
+      currentView = 'humanized';
+      document.getElementById('result-status').textContent = 'HUMANIZED';
+      btn.classList.add('done');
+      btn.textContent = '✓ 윤문 완료';
+      document.getElementById('view-toggle').classList.add('show');
+    }
+  } catch (err) {
+    outputEl.innerHTML = '<div class="error-box">⚠ 윤문 실패: ' + escHtml(err.message) + '</div>';
+    document.getElementById('result-status').textContent = 'ERROR';
+    btn.textContent = '✦ 사람 느낌';
+  } finally {
+    isGenerating = false;
+    btn.disabled = false;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   복사 / 다운로드
+═══════════════════════════════════════════════ */
+function getCurrentText() {
+  if (currentView === 'custom' && customResults[currentPlatform]) return customResults[currentPlatform];
+  if (currentView === 'humanized' && humanizedResults[currentPlatform]) return humanizedResults[currentPlatform];
+  return results[currentPlatform] || '';
+}
+
+async function copyResult() {
+  const text = getCurrentText();
+  if (!text) return showToast('생성된 내용이 없습니다.');
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('클립보드에 복사했습니다 ✓');
+  } catch {
+    showToast('복사 실패 — 수동으로 선택 후 복사해주세요.');
+  }
+}
+
+function downloadResult() {
+  const text = getCurrentText();
+  if (!text) return showToast('생성된 내용이 없습니다.');
+  const suffix = currentView === 'custom' ? '_수정' : currentView === 'humanized' ? '_윤문' : '';
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = PLATFORM_LABELS[currentPlatform].replace(/\//g,'-') + suffix + '_' + Date.now() + '.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ═══════════════════════════════════════════════
+   추가 수정 — 글 단위 맞춤 수정
+═══════════════════════════════════════════════ */
+async function customEdit() {
+  if (isGenerating) return;
+  const apiKey = getKey();
+  if (!apiKey) return showToast('API 키를 먼저 설정해주세요.');
+
+  const instruction = document.getElementById('custom-instruction').value.trim();
+  if (!instruction) return showToast('수정 지시 사항을 입력해주세요.');
+
+  const baseText = getCurrentText();
+  if (!baseText) return showToast('먼저 아티클을 생성해주세요.');
+
+  const baseLabel = currentView === 'humanized' ? '윤문본' : currentView === 'custom' ? '수정본' : '원문';
+  customInstructions[currentPlatform] = instruction;
+
+  isGenerating = true;
+  const btn = document.getElementById('custom-apply-btn');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  document.getElementById('result-status').textContent = 'EDITING...';
+  const outputEl = document.getElementById('result-output');
+  outputEl.innerHTML = '<span class="stream-cursor"></span>';
+
+  let fullText = '';
+  let inTextBlock = false;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-7',
+        max_tokens: 4096,
+        thinking: { type: 'adaptive' },
+        stream: true,
+        system: `당신은 텍스트 편집 전문가입니다. 사용자의 수정 지시에 따라 글의 지정된 부분만 정밀하게 수정합니다.
+
+규칙:
+- 수정 지시에 명시된 부분만 변경합니다. 나머지 내용은 절대 건드리지 않습니다.
+- 마크다운 구조(##, ###, 표, >, 목록)를 그대로 유지합니다.
+- *[EN] ...* 형식의 영어 번역 라인: 해당 한국어 문단이 수정된 경우에만 번역도 함께 갱신합니다.
+- 수정된 마크다운 본문만 출력합니다. 설명·메모·요약을 추가하지 마세요.`,
+        messages: [{ role: 'user', content: `[수정 지시]\n${instruction}\n\n[${baseLabel}]\n${baseText}` }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+        if (data.type === 'content_block_start') {
+          inTextBlock = data.content_block?.type === 'text';
+        } else if (data.type === 'content_block_stop') {
+          inTextBlock = false;
+        } else if (data.type === 'content_block_delta' && inTextBlock) {
+          if (data.delta?.type === 'text_delta') {
+            fullText += data.delta.text;
+            outputEl.innerHTML = marked.parse(fullText) + '<span class="stream-cursor"></span>';
+          }
+        } else if (data.type === 'message_stop') {
+          outputEl.innerHTML = marked.parse(fullText);
+          customResults[currentPlatform] = fullText;
+          currentView = 'custom';
+          document.getElementById('result-status').textContent = 'EDITED';
+          document.getElementById('view-toggle').classList.add('show');
+          const customTab = document.getElementById('vtab-custom');
+          customTab.style.display = '';
+          document.getElementById('vtab-original').classList.remove('active');
+          document.getElementById('vtab-humanized').classList.remove('active');
+          customTab.classList.add('active');
+          updateCustomBaseLabel();
+          showToast('수정이 적용되었습니다 ✓');
+        } else if (data.type === 'error') {
+          throw new Error(data.error?.message || '알 수 없는 오류');
+        }
+      }
+    }
+
+    if (fullText && !customResults[currentPlatform]) {
+      outputEl.innerHTML = marked.parse(fullText);
+      customResults[currentPlatform] = fullText;
+      currentView = 'custom';
+      document.getElementById('result-status').textContent = 'EDITED';
+      document.getElementById('view-toggle').classList.add('show');
+      const ct = document.getElementById('vtab-custom');
+      ct.style.display = '';
+      ct.classList.add('active');
+      updateCustomBaseLabel();
+    }
+
+  } catch (err) {
+    if (baseText) outputEl.innerHTML = marked.parse(baseText);
+    outputEl.innerHTML += '<div class="error-box">⚠ 수정 실패: ' + escHtml(err.message) + '</div>';
+    document.getElementById('result-status').textContent = 'ERROR';
+  } finally {
+    isGenerating = false;
+    btn.disabled = false;
+    btn.textContent = '수정 적용 →';
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   토스트
+═══════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* ═══════════════════════════════════════════════
+   초기화
+═══════════════════════════════════════════════ */
+updateKeyStatus();
+if (getKey()) {
+  document.getElementById('key-banner').style.display = 'none';
+}
+document.getElementById('url-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fetchUrl();
+});
+</script>
+</body>
+</html>

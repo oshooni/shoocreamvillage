@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>릴스 대본 생성기 · 슈크림마을</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --cream:#FBF6EC; --paper:#FFFFFF; --green:#1C5A45; --green2:#2A7059;
+    --green-soft:#E5EFE9; --butter:#F6CB5C; --butter-soft:#FCEFC9; --butter-deep:#E9B43C;
+    --coral:#E8765A; --ink:#2A2A28; --muted:#73726B; --line:#E7E0D2; --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Pretendard','Apple SD Gothic Neo',sans-serif;
+    background:var(--cream); color:var(--ink); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:32px 20px 80px;}
+  header.top{text-align:center;margin-bottom:28px;}
+  .badge{display:inline-block;font-size:12px;font-weight:700;color:var(--green);
+    background:var(--green-soft);padding:6px 14px;border-radius:999px;margin-bottom:14px;}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.25;}
+  h1 .pt{color:var(--green);}
+  header.top p{color:var(--muted);font-size:15px;margin-top:10px;}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;margin-bottom:18px;}
+  .step-label{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;
+    color:var(--green);margin-bottom:6px;}
+  .step-num{width:22px;height:22px;border-radius:7px;background:var(--butter-soft);
+    color:var(--green);display:grid;place-items:center;font-size:12px;font-weight:800;}
+  .card h2{font-size:18px;font-weight:700;margin-bottom:4px;}
+  .card .hint{font-size:13px;color:var(--muted);margin-bottom:14px;}
+
+  label.field{display:block;font-size:13.5px;font-weight:600;margin:16px 0 7px;}
+  label.field .opt{color:var(--muted);font-weight:400;font-size:12px;margin-left:4px;}
+  textarea,input[type=text]{width:100%;border:1.5px solid var(--line);border-radius:12px;
+    padding:12px 14px;font-family:inherit;font-size:14.5px;color:var(--ink);background:#FCFAF4;
+    resize:vertical;line-height:1.55;}
+  textarea:focus,input:focus{outline:none;border-color:var(--green);background:#fff;}
+  textarea{min-height:90px;}
+
+  .seg{display:flex;flex-wrap:wrap;gap:8px;}
+  .seg button{flex:1;min-width:72px;border:1.5px solid var(--line);background:#FCFAF4;
+    border-radius:11px;padding:11px 8px;font-family:inherit;font-size:14px;font-weight:600;
+    color:var(--muted);cursor:pointer;transition:.15s;}
+  .seg button .sub{display:block;font-size:11px;font-weight:400;margin-top:2px;}
+  .seg button.on{background:var(--green);color:#fff;border-color:var(--green);}
+  .seg button.on .sub{color:#D8E5DE;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .row > div{flex:1;min-width:140px;}
+
+  .gen{width:100%;margin-top:22px;background:var(--green);color:#fff;border:none;
+    border-radius:14px;padding:17px;font-family:inherit;font-size:16.5px;font-weight:800;
+    cursor:pointer;transition:.15s;letter-spacing:-.01em;}
+  .gen:hover{background:var(--green2);}
+  .gen:disabled{opacity:.55;cursor:not-allowed;}
+
+  /* ===== RESULTS ===== */
+  #results{margin-top:8px;}
+  .res-hd{display:flex;justify-content:space-between;align-items:center;margin:26px 0 14px;}
+  .res-hd h2{font-size:20px;font-weight:800;}
+  .mini{font-size:12.5px;font-weight:700;color:var(--green);background:var(--green-soft);
+    border:none;border-radius:9px;padding:8px 13px;cursor:pointer;}
+  .mini:hover{background:#D8E8DF;}
+
+  /* HOOK spotlight = signature */
+  .hook{position:relative;background:linear-gradient(135deg,#FFF6DC,#FCEFC9);
+    border:2px solid var(--butter);border-radius:20px;padding:24px 22px 22px;margin-bottom:20px;
+    box-shadow:0 8px 28px -10px rgba(233,180,60,.6);}
+  .hook::before{content:"";position:absolute;inset:0;border-radius:20px;
+    box-shadow:0 0 0 0 rgba(246,203,92,.55);animation:pulse 2.6s infinite;pointer-events:none;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(246,203,92,.5);}70%{box-shadow:0 0 0 16px rgba(246,203,92,0);}100%{box-shadow:0 0 0 0 rgba(246,203,92,0);}}
+  @media (prefers-reduced-motion:reduce){.hook::before{animation:none;}}
+  .hook .tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;
+    color:#7A5A12;background:#fff;border:1.5px solid var(--butter);border-radius:999px;
+    padding:5px 12px;margin-bottom:14px;}
+  .hook h3{font-size:16px;font-weight:800;color:#5E4A14;margin-bottom:12px;}
+  .hook-list{display:flex;flex-direction:column;gap:9px;}
+  .hook-item{background:#fff;border-radius:12px;padding:13px 15px;font-size:16px;font-weight:700;
+    color:var(--ink);border:1px solid #F0DFAE;display:flex;gap:10px;align-items:flex-start;}
+  .hook-item .n{flex:none;color:var(--butter-deep);font-weight:800;}
+  .hook-scene{margin-top:14px;background:rgba(255,255,255,.6);border-radius:12px;padding:12px 15px;
+    font-size:14px;color:#6B5A2A;}
+  .hook-scene b{color:#5E4A14;}
+
+  .block{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;margin-bottom:16px;}
+  .block .bh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .block .bh h3{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .ic{font-size:15px;}
+  .copy{font-size:12px;font-weight:700;color:var(--muted);background:#F2ECDE;border:none;
+    border-radius:8px;padding:6px 11px;cursor:pointer;}
+  .copy:hover{background:#E7DFCC;color:var(--ink);}
+
+  .seg-line{border-left:3px solid var(--green-soft);padding:4px 0 4px 14px;margin-bottom:14px;}
+  .seg-line .lbl{font-size:12.5px;font-weight:700;color:var(--green);}
+  .seg-line .time{font-size:11.5px;color:var(--muted);font-weight:400;margin-left:6px;}
+  .seg-line .lines{font-size:15.5px;white-space:pre-line;margin:5px 0 7px;font-weight:500;}
+  .seg-line .scene{font-size:13px;color:var(--muted);background:#F8F4EA;border-radius:8px;
+    padding:8px 11px;}
+  .seg-line .scene b{color:var(--green);font-weight:700;}
+
+  .script-read{white-space:pre-line;font-size:16px;line-height:1.95;font-weight:500;}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .pillrow span{background:var(--green-soft);color:var(--green);font-size:12.5px;font-weight:600;
+    border-radius:999px;padding:5px 11px;}
+  .kv{margin-bottom:12px;}
+  .kv .k{font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:3px;}
+  .kv .v{font-size:15.5px;font-weight:600;}
+  .thumb{background:var(--green);color:#fff;border-radius:14px;padding:22px;text-align:center;}
+  .thumb .main{font-size:30px;font-weight:800;line-height:1.2;}
+  .thumb .sub{font-size:15px;color:var(--butter);font-weight:600;margin-top:8px;}
+  .tips{background:var(--butter-soft);border:1px solid #F0DFAE;border-radius:14px;padding:16px 18px;}
+  .tips h3{font-size:14px;font-weight:800;color:#5E4A14;margin-bottom:8px;}
+  .tips ul{margin:0;padding-left:18px;}
+  .tips li{font-size:13.5px;color:#6B5A2A;margin-bottom:5px;}
+
+  .loading{text-align:center;padding:40px 20px;color:var(--muted);}
+  .spin{width:34px;height:34px;border:3px solid var(--green-soft);border-top-color:var(--green);
+    border-radius:50%;margin:0 auto 14px;animation:rot 1s linear infinite;}
+  @keyframes rot{to{transform:rotate(360deg);}}
+  .err{background:#FDECE8;border:1px solid #F4C4B8;color:#A53A22;border-radius:12px;
+    padding:14px 16px;font-size:14px;}
+  .hidden{display:none;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;font-size:13.5px;font-weight:600;padding:11px 20px;
+    border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:9;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  footer{text-align:center;font-size:12px;color:var(--muted);margin-top:40px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="badge">슈크림마을 · 릴스 대본 생성기</span>
+    <h1>릴스, <span class="pt">3초</span>가 전부예요.<br>대본은 여기서 끝내요.</h1>
+    <p>레퍼런스를 넣고 몇 가지만 고르면, 후킹부터 장면까지 한 번에 나와요.</p>
+  </header>
+
+  <!-- STEP 1: 레퍼런스 -->
+  <div class="card">
+    <div class="step-label"><span class="step-num">1</span>레퍼런스 수집</div>
+    <h2>참고할 재료를 넣어요</h2>
+    <p class="hint">상세페이지·사례·경험·아이디어 무엇이든 좋아요. 없으면 비워둬도 돼요.</p>
+    <textarea id="ref" placeholder="예) 클래스101 재직 시절 라이브 방송으로 시간당 매출 30만 원을 3,000만 원으로 올린 경험. 문제를 '매출'이 아니라 '크리에이터가 홍보를 안 한다'로 재정의했더니 방법이 보였다…"></textarea>
+  </div>
+
+  <!-- STEP 2: 입력 -->
+  <div class="card">
+    <div class="step-label"><span class="step-num">2</span>입력</div>
+    <h2>방향을 정해요</h2>
+    <p class="hint">목적과 소재만 정하면 나머지는 비워도 AI가 채워줘요.</p>
+
+    <label class="field">이 릴스의 목적</label>
+    <div class="seg" id="purpose">
+      <button data-v="유입" class="on">유입<span class="sub">모르는 사람 끌기</span></button>
+      <button data-v="정보">정보<span class="sub">신뢰 쌓기</span></button>
+      <button data-v="전환">전환<span class="sub">판매 연결</span></button>
+      <button data-v="홍보">홍보<span class="sub">오픈·마감</span></button>
+    </div>
+
+    <label class="field">소재 한 줄 <span class="opt">· 무슨 경험/주제로 만들까요?</span></label>
+    <input type="text" id="topic" placeholder="예) 공고 분석을 안 하면 서류에서 떨어지는 이유">
+
+    <label class="field">핵심 메시지 <span class="opt">· 선택, 이 영상이 결국 하려는 말</span></label>
+    <input type="text" id="message" placeholder="예) 공고에는 합격의 답이 다 적혀 있다">
+
+    <div class="row">
+      <div>
+        <label class="field">타깃 <span class="opt">· 선택</span></label>
+        <input type="text" id="target" placeholder="예) 취준생">
+      </div>
+      <div>
+        <label class="field">길이</label>
+        <div class="seg" id="length">
+          <button data-v="15~20초">짧게</button>
+          <button data-v="30초" class="on">보통</button>
+          <button data-v="40~45초">길게</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label class="field">말투</label>
+        <div class="seg" id="speech">
+          <button data-v="존댓말" class="on">존댓말</button>
+          <button data-v="반말">반말</button>
+        </div>
+      </div>
+      <div>
+        <label class="field">분위기</label>
+        <div class="seg" id="mood">
+          <button data-v="친근발랄" class="on">친근·발랄</button>
+          <button data-v="차분진중">차분·진중</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="gen" id="genBtn" onclick="generate()">대본 만들기</button>
+  </div>
+
+  <div id="results"></div>
+  <footer>슈크림마을 · 노슈니 릴스 프레임워크 기반</footer>
+</div>
+<div class="toast" id="toast">복사됐어요</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function seg(id){
+  const box=$('#'+id);
+  box.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    box.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  });
+  return ()=>box.querySelector('.on').dataset.v;
+}
+const getPurpose=seg('purpose'), getLength=seg('length'),
+      getSpeech=seg('speech'), getMood=seg('mood');
+
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),1400);}
+function copy(txt){navigator.clipboard.writeText(txt).then(()=>toast('복사됐어요'));}
+
+function buildPrompt(){
+  const ref=$('#ref').value.trim();
+  const topic=$('#topic').value.trim();
+  const message=$('#message').value.trim();
+  const target=$('#target').value.trim();
+  return `당신은 인스타그램 릴스 대본 전문가입니다. 콘텐츠 마케터 '노슈니'의 릴스 제작 프레임워크를 그대로 사용합니다.
+
+[노슈니 프레임워크]
+- 구조: 후크 → 공감(흔한 실수) → 전환(반전) → 방법/해결 → 공식(저장각) → CTA. 목적에 따라 칸을 조절한다.
+- 후크 유형: 숫자형, 호기심형, 공감·반전형 중에서 고른다.
+- 대사는 마이크 들고 그대로 읽을 구어체로, 끊어 읽기 좋게 짧게 나눈다(줄바꿈 = 한 호흡).
+- 자막은 말보다 짧게, 한 컷에 한 메시지.
+- '와 포인트'(반전·대비)와 '저장각'(공식·핵심 정리)을 의도적으로 배치한다.
+- 안전장치: 남의 기사·이미지·출연자 얼굴은 저작권·초상권 확인. 유입·정보 목적이면 제품 직접 홍보는 넣지 않는다(도달 보호). 전환·홍보 목적일 때만 제품/CTA를 넣는다.
+
+[입력]
+- 목적: ${getPurpose()}
+- 소재: ${topic||'(미입력 — 레퍼런스에서 잡아라)'}
+- 핵심 메시지: ${message||'(미입력 — 네가 한 줄로 정해라)'}
+- 타깃: ${target||'(미입력 — 소재에 맞게 추정)'}
+- 길이: ${getLength()}
+- 말투: ${getSpeech()==='반말'?'반말(친구에게 말하듯)':'존댓말(~해요체)'}
+- 분위기: ${getMood()==='반말'?'친근·발랄':getMood()}
+- 레퍼런스: ${ref||'(없음 — 소재만으로 만들어라)'}
+
+[작업]
+위 입력으로 릴스 대본 한 편을 만든다. 첫 3초 후킹이 가장 중요하므로 hooks에 가장 공들여라.
+
+반드시 아래 JSON만 출력한다. 마크다운, 코드펜스, 설명 없이 순수 JSON만. 모든 값은 한국어.
+{
+ "hooks": ["첫 3초에 말할 후크 멘트 후보 3개. 짧고 강하게. 서로 다른 유형으로."],
+ "hookScene": "0~3초 화면 연출 한 줄 (무엇을 첫 컷에 크게 띄울지)",
+ "titles": ["게시물 제목/캡션 첫 줄 후보 2개"],
+ "thumbnail": {"main":"썸네일 메인 문구(아주 짧게, 숫자나 핵심어)","sub":"썸네일 보조 문구(한 줄)"},
+ "segments": [
+   {"label":"구간명(예: 후크/공감/전환/방법/공식/CTA)","time":"0-3초","lines":"읽을 대사. 끊어읽기는 \\n으로.","scene":"이 구간 화면/자막/인서트 추천"}
+ ],
+ "mention": {"caption":"인스타 캡션(짧고 임팩트 있게)","commentCTA":"댓글/DM 유도 멘트 한 줄","hashtags":["#해시태그","6~8개"]},
+ "tips": ["이 영상에서 특히 챙길 연출/주의 팁 2~3개(저작권·초상권 포함 가능)"]
+}
+segments는 길이에 맞춰 4~6개. 간결하게.`;
+}
+
+async function generate(){
+  const topic=$('#topic').value.trim();
+  const ref=$('#ref').value.trim();
+  if(!topic && !ref){ toast('소재나 레퍼런스를 입력해 주세요'); return; }
+  const btn=$('#genBtn'); btn.disabled=true; btn.textContent='만드는 중…';
+  const R=$('#results');
+  R.innerHTML='<div class="loading"><div class="spin"></div>후킹 멘트부터 장면까지 짜는 중이에요…</div>';
+  R.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6",max_tokens:1000,
+        messages:[{role:"user",content:buildPrompt()}]
+      })
+    });
+    const data=await resp.json();
+    let text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+    text=text.replace(/```json/g,'').replace(/```/g,'').trim();
+    const obj=JSON.parse(text);
+    render(obj);
+  }catch(e){
+    R.innerHTML='<div class="err">대본 생성에 실패했어요. 잠시 후 다시 시도하거나, 입력을 조금 줄여서 다시 만들어 주세요.</div>';
+  }finally{
+    btn.disabled=false; btn.textContent='대본 만들기';
+  }
+}
+
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function render(o){
+  const fullScript=(o.segments||[]).map(s=>s.lines).join('\n\n');
+  let h='';
+  h+=`<div class="res-hd"><h2>완성된 대본</h2><button class="mini" onclick="generate()">다시 만들기</button></div>`;
+
+  // HOOK spotlight (signature, top, emphasized)
+  h+=`<div class="hook">
+    <span class="tag">⏱ 첫 3초 — 가장 중요</span>
+    <h3>여기서 멈추게 만들어야 끝까지 봐요</h3>
+    <div class="hook-list">`;
+  (o.hooks||[]).forEach((hk,i)=>{h+=`<div class="hook-item"><span class="n">${i+1}</span><span>${esc(hk)}</span></div>`;});
+  h+=`</div>`;
+  if(o.hookScene){h+=`<div class="hook-scene"><b>후크 장면 ·</b> ${esc(o.hookScene)}</div>`;}
+  h+=`</div>`;
+
+  // 마이크용 전체 대사
+  h+=`<div class="block"><div class="bh"><h3><span class="ic">🎙️</span>마이크용 전체 대사</h3>
+    <button class="copy" onclick='copy(${JSON.stringify(fullScript)})'>복사</button></div>
+    <div class="script-read">${esc(fullScript)}</div></div>`;
+
+  // 구간별 멘트 + 장면
+  h+=`<div class="block"><div class="bh"><h3><span class="ic">🎬</span>구간별 멘트 · 장면</h3></div>`;
+  (o.segments||[]).forEach(s=>{
+    h+=`<div class="seg-line"><div class="lbl">${esc(s.label)}<span class="time">${esc(s.time||'')}</span></div>
+      <div class="lines">${esc(s.lines)}</div>
+      <div class="scene"><b>화면 ·</b> ${esc(s.scene||'')}</div></div>`;
+  });
+  h+=`</div>`;
+
+  // 썸네일 + 제목
+  h+=`<div class="block"><div class="bh"><h3><span class="ic">🖼️</span>썸네일 · 제목</h3></div>`;
+  if(o.thumbnail){h+=`<div class="thumb"><div class="main">${esc(o.thumbnail.main)}</div><div class="sub">${esc(o.thumbnail.sub||'')}</div></div>`;}
+  h+=`<div class="kv" style="margin-top:14px;"><div class="k">제목 후보</div>`;
+  (o.titles||[]).forEach(t=>{h+=`<div class="v">· ${esc(t)}</div>`;});
+  h+=`</div></div>`;
+
+  // 멘션 / 캡션
+  if(o.mention){
+    h+=`<div class="block"><div class="bh"><h3><span class="ic">💬</span>멘션 · 캡션</h3>
+      <button class="copy" onclick='copy(${JSON.stringify((o.mention.caption||'')+'\n\n'+(o.mention.commentCTA||'')+'\n\n'+((o.mention.hashtags||[]).join(' ')))})'>복사</button></div>`;
+    h+=`<div class="kv"><div class="k">캡션</div><div class="v">${esc(o.mention.caption)}</div></div>`;
+    if(o.mention.commentCTA){h+=`<div class="kv"><div class="k">댓글·DM 유도</div><div class="v">${esc(o.mention.commentCTA)}</div></div>`;}
+    if(o.mention.hashtags){h+=`<div class="kv"><div class="k">해시태그</div><div class="pillrow">${o.mention.hashtags.map(t=>`<span>${esc(t)}</span>`).join('')}</div></div>`;}
+    h+=`</div>`;
+  }
+
+  // 팁
+  if(o.tips&&o.tips.length){
+    h+=`<div class="tips"><h3>이 영상에서 챙길 것</h3><ul>${o.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></div>`;
+  }
+
+  $('#results').innerHTML=h;
+}
+</script>
+</body>
+</html>
